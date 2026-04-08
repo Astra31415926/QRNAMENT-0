@@ -492,12 +492,25 @@
                     if(i18n[key]) el.textContent = i18n[key][lang];
                 });
             },
-
-            save() {
+save() {
                 const link = document.createElement('a');
                 link.download = 'qrnament-sync.png';
                 link.href = this.els.canvas.toDataURL();
                 link.click();
+            },
+
+            async share() {
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'QRnament Art',
+                            text: 'Посмотри, какую мандалу я создал в QRnament!',
+                            url: window.location.href
+                        });
+                    } catch (err) { console.log('Share error'); }
+                } else {
+                    alert("Твой браузер не поддерживает Share. Просто скопируй ссылку!");
+                }
             }
         };
 
