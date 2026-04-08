@@ -126,57 +126,73 @@
             'n9': [1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1]  // Зебра горизонт
         };
 
-        // --- 2. CORE ORNAMENT FUNCTION (Restored Logic) ---
-        function drawSnowflake(ctx, nCount, pxSize, usePats, pal, smart) {
-            // Dynamic Grid Calculation
-            // We add +5 buffer cells around
-            let gridDim = Math.floor(nCount / CELL) + 5;
-            if (gridDim % 2 === 0) gridDim++; // Ensure odd for center
-            
+      function drawSnowflake(ctx, nCount, pxSize, usePats, pal, smart) {
+            const imgSize = nCount * pxSize;
+            const gridDim = Math.floor(nCount / CELL) + 5;
             const center = Math.floor(gridDim / 2);
             const quad = center + 1;
-            const imgSize = nCount * pxSize; // Total canvas size in pixels
+            const blockPx = CELL * pxSize; // Размер одного блока (7x7 пикселей)
 
-            // 1. Generate Octant Data
-            // Stores { pat: array, color: number }
+            // 1. Генерируем данные только для одного треугольника (октанта)
             let octant = [];
             for (let r = 0; r < quad; r++) {
                 octant[r] = [];
                 for (let c = 0; c <= r; c++) {
                     let color = pal[Math.floor(Math.random() * pal.length)];
                     let pat = usePats ? 
-                        PATS[Object.keys(PATS)[Math.floor(Math.random() * 5)]] : // Use first 5 for patterns
-                        PATS['s']; // Solid block
+                        PATS[Object.keys(PATS)[Math.floor(Math.random() * Object.keys(PATS).length)]] : 
+                        PATS['s'];
                     
-                    // Smart Fill Logic (Only applies if NOT usePats initially, then overrides)
                     if (smart && !usePats) {
-                         // Replace solid block with symmetric filler
                         pat = PATS[FILL_KEYS[Math.floor(Math.random() * FILL_KEYS.length)]];
-                        // Invert brightness
                         color = color > 128 ? 20 : 230;
                     }
-                    
                     octant[r][c] = { pat, color };
                 }
             }
 
-            // 2. Render to Context
-            // Calculate offset to center the grid on the canvas
-            const offset = (imgSize - gridDim * CELL * pxSize) / 2;
+            // 2. СОЗДАЕМ ВРЕМЕННЫЙ ХОЛСТ ДЛЯ СЕГМЕНТА (ЗАПЕКАНИЕ)
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = imgSize;
+            tempCanvas.height = imgSize;
+            const tCtx = tempCanvas.getContext('2d');
+            const offset = (imgSize - gridDim * blockPx) / 2;
 
-            for (let rC = 0; rC < gridDim; rC++) {
-                for (let cC = 0; cC < gridDim; cC++) {
-                    // Relative coords from center
-                    let relC = cC - center;
-                    let relR = rC - center;
+            // Рисуем один сегмент (треугольник)
+            for (let r = 0; r < quad; r++) {
+                for (let c = 0; c <= r; c++) {
+                    const data = octant[r][c];
+                    const startX = offset + (center + c) * blockPx;
+                    const startY = offset + (center + r) * blockPx;
                     
-                    // Map to Octant Source
-                    let absC = Math.abs(relC);
-                    let absR = Math.abs(relR);
-                    let sR = Math.max(absR, absC); // Radial index
-                    let sC = Math.min(absR, absC); // Angular index
-                    
-                    let data = octant[sR][sC];
+                    tCtx.fillStyle = `rgb(${data.color},${data.color},${data.color})`;
+                    const pSize = blockPx / 7;
+
+                    for (let i = 0; i < 49; i++) {
+                        if (data.pat[i]) {
+                            const px = i % 7;
+                            const py = Math.floor(i / 7);
+                            tCtx.fillRect(startX + px * pSize, startY + py * pSize, pSize + 0.5, pSize + 0.5);
+                        }
+                    }
+                }
+            }
+
+            // 3. ОТРАЖАЕМ ЗАПЕЧЕННЫЙ СЕГМЕНТ 8 РАЗ
+            ctx.save();
+            ctx.translate(imgSize / 2, imgSize / 2); // Сдвиг в центр
+
+            for (let i = 0; i < 8; i++) {
+                ctx.save();
+                ctx.rotate((i * 45) * Math.PI / 180);
+                if (i % 2 === 1) ctx.scale(1, -1);
+                
+                // Рисуем сегмент так, чтобы его угол был в центре
+                ctx.drawImage(tempCanvas, -imgSize / 2, -imgSize / 2);
+                ctx.restore();
+            }
+            ctx.restore();
+        }
 
                     // Draw 7x7 Cell
                     for (let i = 0; i < 49; i++) {
