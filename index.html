@@ -268,8 +268,7 @@
             },
 
             toggleMenu() { this.els.menu.classList.toggle('open'); },
-
-            generate() {
+generate() {
                 const text = this.els.input.value;
                 if (!text) { this.clearCanvas(); this.updateStatus("Waiting..."); return; }
 
@@ -285,12 +284,12 @@
                     const modSize = 1024 / totalModules;
                     const ctx = this.els.ctx;
                     
-                    // 1. Фон
+                    // 1. Очистка фона
                     ctx.globalCompositeOperation = "source-over";
                     ctx.fillStyle = "#000";
                     ctx.fillRect(0, 0, 1024, 1024);
 
-                    // 2. Красный слой (Шум для глубины)
+                    // 2. Красный слой (Шум)
                     ctx.fillStyle = "#FF0000";
                     for (let r = 0; r < totalModules; r += 2) {
                         for (let c = 0; c < totalModules; c += 2) {
@@ -298,13 +297,13 @@
                         }
                     }
 
-                    // 3. Зеленый слой (Мандала 7x7 через Difference)
+                    // 3. Зеленый слой (Мандала 7x7)
                     ctx.globalCompositeOperation = "difference";
                     const gridG = this.build7x7Grid(totalModules);
                     ctx.fillStyle = "#00FF00";
                     this.drawGrid(ctx, gridG, totalModules, modSize);
 
-                    // 4. Синий слой (QR-код через Screen)
+                    // 4. Синий слой (QR-код)
                     ctx.globalCompositeOperation = "screen";
                     ctx.fillStyle = "#0000FF";
                     for (let r = 0; r < moduleCount; r++) {
@@ -322,68 +321,6 @@
                     this.updateStatus("Error");
                 }
             },
-                    ctx.globalCompositeOperation = "source-over";
-                    this.updateStatus("Mandala Generated");
-                } catch (e) {
-                    console.error(e);
-                    this.updateStatus("Error");
-                }
-            },
-
-            // --- NEW: build7x7Grid (Seed-Free Mandala Logic) ---
-            build7x7Grid(size) {
-                const grid = Array(size).fill(0).map(() => Array(size).fill(0));
-                const center = Math.floor(size / 2);
-                
-                // 1. Temporary Map for the Octant
-                const octantMap = new Map(); // Key: "x,y", Value: true
-                
-                // Calculate block bounds to cover the grid radius
-                // Radius approx size/2. Block count = ceil((size/2 + 3) / 7)
-                const maxBlocks = Math.ceil((size / 2 + 7) / 7); 
-
-                // 2. Iterate Blocks covering the positive quadrant (bx >= 0, by >= 0)
-                // We loop blocks in the octant region (bx >= by)
-                for (let by = 0; by < maxBlocks; by++) {
-                    for (let bx = by; bx < maxBlocks; bx++) {
-                        
-                        // RANDOM SPRITE (Seed-Free)
-                        const patternIdx = Math.floor(Math.random() * SPRITE_LIB_7x7.length);
-                        const pattern = SPRITE_LIB_7x7[patternIdx];
-                        
-                        // RANDOM TRANSFORMS (Flip X/Y)
-                        const flipX = Math.random() > 0.5;
-                        const flipY = Math.random() > 0.5;
-
-                        // 3. Iterate Sprite Pixels
-                        for (let py = 0; py < 7; py++) {
-                            for (let px = 0; px < 7; px++) {
-                                
-                                // Apply flips to source coordinates
-                                let sX = flipX ? (6 - px) : px;
-                                let sY = flipY ? (6 - py) : py;
-                                
-                                // Check if pixel is ON
-                                if ((pattern[sY] >> (6 - sX)) & 1) {
-                                    
-                                    // Calculate Relative Coordinates (centered)
-                                    // Block (0,0) starts at relative (-3, -3)
-                                    // Block (bx, by) starts at (-3 + bx*7, -3 + by*7)
-                                    // We are iterating blocks in the positive octant indices.
-                                    let xRel = (bx * 7) + px - 3;
-                                    let yRel = (by * 7) + py - 3;
-
-                                    // Constraint: Fill ONLY the Octant (x >= y >= 0)
-                                    // Since we loop blocks bx >= by, most pixels fall in x >= y.
-                                    // We explicitly check conditions.
-                                    if (xRel >= yRel && yRel >= 0) {
-                                        octantMap.set(`${xRel},${yRel}`, true);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
 
                 // 4. Apply 8-Fold Symmetry (Kaleidoscope)
                 octantMap.forEach((val, key) => {
