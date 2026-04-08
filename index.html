@@ -1,142 +1,219 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament v3.3 // Fixed Symmetry</title>
+    <title>QRnament v3.5 // Full Professional Sync</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; }
-        canvas { width: 100%; height: auto; image-rendering: pixelated; border: 1px solid #333; border-radius: 20px; }
-        .neon-btn { border: 1px solid #00ff41; color: #00ff41; transition: 0.3s; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
-        .neon-btn:hover { background: #00ff41; color: #000; box-shadow: 0 0 20px #00ff41; }
+        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
+        .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
+        #canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; border-radius: 1.5rem; }
+        #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; transform: scaleX(-1); }
+        .neon-btn { background: rgba(0, 255, 65, 0.05); border: 1px solid #00ff41; box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); transition: all 0.2s; }
+        .neon-btn:active { transform: scale(0.95); }
+        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; transform: translateX(100%); transition: 0.4s; padding: 2rem; }
+        .menu-overlay.open { transform: translateX(0); }
     </style>
 </head>
-<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto gap-4">
+<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
 
-    <header class="text-center py-4">
-        <h1 class="text-2xl font-black italic">QR<span class="text-[#00ff41]">NAMENT</span></h1>
-        <p class="text-[10px] opacity-50 uppercase tracking-widest">Symmetric Engine v3.3</p>
-    </header>
-
-    <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-none outline-none h-20 text-white placeholder-zinc-600 focus:ring-1 ring-[#00ff41]" placeholder="Введите текст..."></textarea>
-
-    <div class="relative aspect-square w-full">
-        <canvas id="canvas" width="1024" height="1024"></canvas>
+    <div id="menu-overlay" class="menu-overlay flex flex-col gap-6">
+        <div class="flex justify-between items-center">
+            <h2 class="text-xl font-bold">SETTINGS</h2>
+            <button onclick="App.toggleMenu()" class="text-3xl">&times;</button>
+        </div>
+        <p class="text-sm text-zinc-500">Алгоритм синхронізує кожен модуль QR-коду з 8-кратною симетрією орнаменту. Використовується RGB-кодування каналів.</p>
     </div>
 
-    <button onclick="App.save()" class="w-full py-4 rounded-2xl neon-btn">Save PNG</button>
-    <p id="status" class="text-center text-[10px] text-[#00ff41] font-bold">READY</p>
+    <header class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-black tracking-tighter uppercase">
+            <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
+        </h1>
+        <button onclick="App.toggleMenu()" class="p-2 border border-white/10 rounded-lg">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+    </header>
 
-<script>
-// --- КОНСТАНТЫ ОРНАМЕНТА ---
-const CELL = 7;
-const PAL_BLOCKS = [80, 120, 180];
-const PAL_PATTERNS = [180, 200, 160];
-const FILL_KEYS = ['p1', 'p9', 'p14', 'p17', 'p18'];
-const PATS = {
-    'p1':  [0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0],
-    'p9':  [1,1,1,1,1,1,1, 1,0,0,0,0,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,0,0,0,0,1, 1,1,1,1,1,1,1],
-    'p14': [1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1],
-    'p17': [1,1,0,1,0,1,1, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 1,1,0,1,0,1,1],
-    'p18': [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,1,1,1,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0],
-    's1':  new Array(49).fill(1)
-};
+    <div class="mb-4 relative">
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-[#00ff41] outline-none h-20 text-sm" placeholder="Введіть текст для генерації..."></textarea>
+    </div>
 
-// --- ДВИЖОК СИММЕТРИИ ---
-const OrnamentEngine = {
-    getOrnamentValue(nCount, x, y, config) {
-        const center = (nCount - 1) / 2;
-        let relX = x - center;
-        let relY = y - center;
+    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl overflow-hidden mb-6 shadow-2xl border border-white/5">
+        <canvas id="canvas" width="1024" height="1024"></canvas>
+        <video id="video" playsinline></video>
+        <div id="flash" class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-100"></div>
+    </div>
 
-        // Зеркальное отражение для 8-кратной симметрии
-        let absX = Math.abs(relX);
-        let absY = Math.abs(relY);
-        if (absX < absY) [absX, absY] = [absY, absX];
+    <div class="flex flex-col gap-3">
+        <button onclick="App.save()" class="w-full py-4 rounded-2xl neon-btn font-bold uppercase tracking-widest text-xs">Save PNG Image</button>
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="App.startCamera()" class="py-4 rounded-2xl border border-zinc-800 text-xs font-bold uppercase">Cam Scan</button>
+            <button onclick="document.getElementById('file-input').click()" class="py-4 rounded-2xl border border-zinc-800 text-xs font-bold uppercase">File Scan</button>
+        </div>
+        <input type="file" id="file-input" class="hidden" accept="image/*">
+    </div>
 
-        // Сид для ячейки (детерминированный рандом)
-        const cellX = Math.floor(absX / (nCount / (Math.floor(nCount/CELL)+5)));
-        const cellY = Math.floor(absY / (nCount / (Math.floor(nCount/CELL)+5)));
-        const seed = cellX * 1337 + cellY;
-        const rand = () => { let s = Math.sin(seed) * 10000; return s - Math.floor(s); };
+    <p id="status" class="text-center text-[10px] text-[#00ff41] font-bold mt-6 tracking-widest uppercase">System Ready</p>
 
-        let pattern = config.usePatterns ? PATS[Object.keys(PATS)[Math.floor(rand()*5)]] : PATS['s1'];
-        let color = config.palette[Math.floor(rand()*config.palette.length)];
+    <script>
+    // --- ГЕНЕРАТИВНІ ПАРАМЕТРИ ---
+    const CELL = 7;
+    const PAL_BLOCKS = [80, 120, 180];
+    const PAL_PATTERNS = [180, 200, 160];
+    const PATS = {
+        'p1': [0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0],
+        'p9': [1,1,1,1,1,1,1, 1,0,0,0,0,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,0,0,0,0,1, 1,1,1,1,1,1,1],
+        'p18': [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,1,1,1,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0],
+        's1': new Array(49).fill(1)
+    };
 
-        if (config.smartFill && !config.usePatterns) {
-            pattern = PATS[FILL_KEYS[Math.floor(rand()*5)]];
-            color = color > 128 ? 40 : 220;
-        }
+    // --- СИМЕТРИЧНИЙ ДВИЖОК ---
+    const OrnamentEngine = {
+        getVal(nCount, x, y, config) {
+            const center = (nCount - 1) / 2;
+            let rx = x - center, ry = y - center;
+            let ax = Math.abs(rx), ay = Math.abs(ry);
+            if (ax < ay) [ax, ay] = [ay, ax]; // 8-way symmetry
 
-        // Локальные координаты внутри паттерна 7x7
-        const px = Math.floor((x % CELL));
-        const py = Math.floor((y % CELL));
-        
-        if (pattern[py * 7 + px] === 1) {
-            const dist = Math.sqrt(relX*relX + relY*relY) / (nCount/1.4);
-            return Math.floor(color * (0.5 + 0.5 * dist));
-        }
-        return 0;
-    }
-};
+            // Seed based on grid cell
+            const gridScale = nCount / (Math.floor(nCount/CELL) + 5);
+            const cx = Math.floor(ax / gridScale), cy = Math.floor(ay / gridScale);
+            const seed = (cx * 1000 + cy);
+            const r = () => { let s = Math.sin(seed) * 10000; return s - Math.floor(s); };
 
-const App = {
-    init() {
-        this.canvas = document.getElementById('canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.input = document.getElementById('main-input');
-        this.input.addEventListener('input', () => this.generate());
-        this.generate();
-    },
-
-    generate() {
-        const text = this.input.value || "QRnament";
-        const qr = qrcode(0, 'M');
-        qr.addData(unescape(encodeURIComponent(text)));
-        qr.make();
-
-        const modCount = qr.getModuleCount();
-        const quiet = 4;
-        const totalMod = modCount + quiet * 2;
-        const modSize = 1024 / totalMod;
-
-        this.ctx.fillStyle = "#000";
-        this.ctx.fillRect(0, 0, 1024, 1024);
-
-        for (let y = 0; y < totalMod; y++) {
-            for (let x = 0; x < totalMod; x++) {
-                // RED: Базовые блоки
-                const r = OrnamentEngine.getOrnamentValue(totalMod, x, y, { usePatterns: false, palette: PAL_BLOCKS });
-                
-                // GREEN: Разность (Patterns vs SmartBlocks)
-                const g1 = OrnamentEngine.getOrnamentValue(totalMod, x, y, { usePatterns: false, palette: PAL_BLOCKS, smartFill: true });
-                const g2 = OrnamentEngine.getOrnamentValue(totalMod, x, y, { usePatterns: true, palette: PAL_PATTERNS });
-                const g = 255 - Math.abs(g1 - g2);
-
-                // BLUE: QR Data
-                let b = 0;
-                if (x >= quiet && x < totalMod - quiet && y >= quiet && y < totalMod - quiet) {
-                    if (qr.isDark(y - quiet, x - quiet)) b = 255;
-                }
-
-                this.ctx.fillStyle = `rgb(${r},${g},${b})`;
-                this.ctx.fillRect(Math.floor(x * modSize), Math.floor(y * modSize), Math.ceil(modSize), Math.ceil(modSize));
+            let pattern = config.isPattern ? PATS[Object.keys(PATS)[Math.floor(r()*3)]] : PATS['s1'];
+            if (config.smart && !config.isPattern) {
+                if (r() > 0.5) pattern = PATS['p1'];
             }
+
+            const color = config.pal[Math.floor(r() * config.pal.length)];
+            const px = Math.floor(x % CELL), py = Math.floor(y % CELL);
+
+            if (pattern[py * 7 + px] === 1) {
+                const d = Math.sqrt(rx*rx + ry*ry) / (nCount/1.2);
+                return Math.floor(color * (0.6 + 0.4 * d));
+            }
+            return 0;
         }
-        document.getElementById('status').innerText = `GRID: ${totalMod}x${totalMod} // SYNC OK`;
-    },
+    };
 
-    save() {
-        const a = document.createElement('a');
-        a.download = 'qrnament.png';
-        a.href = this.canvas.toDataURL();
-        a.click();
-    }
-};
+    // --- ОСНОВНИЙ ДОДАТОК ---
+    const App = {
+        init() {
+            this.canvas = document.getElementById('canvas');
+            this.ctx = this.canvas.getContext('2d');
+            this.video = document.getElementById('video');
+            this.input = document.getElementById('main-input');
+            
+            this.input.addEventListener('input', () => this.generate());
+            document.getElementById('file-input').addEventListener('change', (e) => this.handleFile(e));
+            
+            this.generate();
+        },
 
-document.addEventListener('DOMContentLoaded', () => App.init());
-</script>
+        toggleMenu() { document.getElementById('menu-overlay').classList.toggle('open'); },
+
+        generate() {
+            const val = this.input.value || "QRnament";
+            try {
+                const qr = qrcode(0, 'H');
+                qr.addData(unescape(encodeURIComponent(val)));
+                qr.make();
+
+                const mCount = qr.getModuleCount();
+                const qZone = 4;
+                const total = mCount + qZone * 2;
+                const mSize = 1024 / total;
+
+                this.ctx.fillStyle = "#000";
+                this.ctx.fillRect(0, 0, 1024, 1024);
+
+                for(let y=0; y<total; y++) {
+                    for(let x=0; x<total; x++) {
+                        const r = OrnamentEngine.getVal(total, x, y, { isPattern: false, pal: PAL_BLOCKS });
+                        const g1 = OrnamentEngine.getVal(total, x, y, { isPattern: false, pal: PAL_BLOCKS, smart: true });
+                        const g2 = OrnamentEngine.getVal(total, x, y, { isPattern: true, pal: PAL_PATTERNS });
+                        const g = 255 - Math.abs(g1 - g2);
+                        
+                        let b = 0;
+                        if(x>=qZone && x<total-qZone && y>=qZone && y<total-qZone) {
+                            if(qr.isDark(y-qZone, x-qZone)) b = 255;
+                        }
+
+                        this.ctx.fillStyle = `rgb(${r},${g},${b})`;
+                        this.ctx.fillRect(Math.floor(x*mSize), Math.floor(y*mSize), Math.ceil(mSize), Math.ceil(mSize));
+                    }
+                }
+                this.updateStatus(`Symmetric Grid: ${total}x${total}`);
+            } catch(e) { this.updateStatus("Error: Data too big"); }
+        },
+
+        startCamera() {
+            this.updateStatus("Camera Active");
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => {
+                this.video.srcObject = s;
+                this.video.style.display = 'block';
+                this.video.play();
+                this.scan();
+            });
+        },
+
+        scan() {
+            if (this.video.paused || this.video.ended) return;
+            const tmp = document.createElement('canvas');
+            tmp.width = 1024; tmp.height = 1024;
+            const tCtx = tmp.getContext('2d');
+            tCtx.drawImage(this.video, 0, 0, 1024, 1024);
+            const img = tCtx.getImageData(0,0,1024,1024);
+            // Scan blue channel for QR
+            const res = jsQR(img.data, 1024, 1024);
+            if(res) {
+                this.input.value = res.data;
+                this.video.style.display = 'none';
+                this.video.srcObject.getTracks().forEach(t => t.stop());
+                this.generate();
+                this.flash();
+            } else { requestAnimationFrame(() => this.scan()); }
+        },
+
+        handleFile(e) {
+            const f = e.target.files[0];
+            const r = new FileReader();
+            r.onload = (ev) => {
+                const i = new Image();
+                i.onload = () => {
+                    this.ctx.drawImage(i, 0, 0, 1024, 1024);
+                    const data = this.ctx.getImageData(0,0,1024,1024);
+                    const res = jsQR(data.data, 1024, 1024);
+                    if(res) { this.input.value = res.data; this.generate(); this.flash(); }
+                };
+                i.src = ev.target.result;
+            };
+            r.readAsDataURL(f);
+        },
+
+        flash() {
+            const f = document.getElementById('flash');
+            f.style.opacity = 1; setTimeout(() => f.style.opacity = 0, 150);
+        },
+
+        save() {
+            const l = document.createElement('a');
+            l.download = 'qrnament.png';
+            l.href = this.canvas.toDataURL();
+            l.click();
+        },
+
+        updateStatus(m) { document.getElementById('status').innerText = m; }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
 </body>
 </html>
