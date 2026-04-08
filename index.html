@@ -1,19 +1,9 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament v4.0 // Spectral Mandala</title>
-    <meta name="description" content="QRnament v4.0 — симметричный QR-орнамент 8x мандала">
-    
-    <meta property="og:title" content="QRnament v4.0 // Spectral Mandala">
-    <meta property="og:description" content="Создавай уникальные симметричные QR-арты. Математическая 8x мандала.">
-    <meta property="og:type" content="website">
-    <meta name="theme-color" content="#00ff41">
-
-   <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon.png">
-    <link rel="apple-touch-icon" href="icon-512.png">
+    <title>QRnament v3.3 // Correct Sync</title>
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -88,9 +78,6 @@
 
     <div class="flex flex-col gap-3">
         <button onclick="App.save()" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Save PNG</button>
-        
-        <button onclick="App.share()" class="w-full py-4 bg-black text-white font-black rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">📱 Share Art</button>
-
         <div class="grid grid-cols-2 gap-3">
             <button onclick="App.startCamera()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Cam Scan</button>
             <button onclick="document.getElementById('file-input').click()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">File Scan</button>
@@ -105,26 +92,16 @@
         const CELL = 7;
         const PAL_BLOCKS = [80, 120, 180];
         const PAL_PATTERNS = [180, 200, 160];
-       const FILL_KEYS = ['p1', 'p9', 'p14', 'p17', 'p18', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'n9'];
+        const FILL_KEYS = ['p1', 'p9', 'p14', 'p17', 'p18'];
 
         // Pattern Library (Binary Arrays 0/1)
-       const PATS = {
+        const PATS = {
             'p1':  [0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0],
             'p9':  [1,1,1,1,1,1,1, 1,0,0,0,0,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,0,0,0,0,1, 1,1,1,1,1,1,1],
             'p14': [1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1],
             'p17': [1,1,0,1,0,1,1, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 1,1,0,1,0,1,1],
             'p18': [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,1,1,1,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0],
-            's':   [1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1],
-            // Новые уникальные паттерны (адаптированы под 7x7):
-            'n1': [0,0,0,0,0,0,0, 0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0, 0,0,0,0,0,0,0], // Ромб
-            'n2': [0,0,0,0,0,0,0, 0,1,1,1,1,1,0, 0,1,0,0,0,1,0, 0,1,0,0,0,1,0, 0,1,0,0,0,1,0, 0,1,1,1,1,1,0, 0,0,0,0,0,0,0], // Рамка
-            'n3': [0,0,0,0,0,0,0, 0,0,0,1,0,0,0, 0,0,0,1,0,0,0, 0,1,1,1,1,1,0, 0,0,0,1,0,0,0, 0,0,0,1,0,0,0, 0,0,0,0,0,0,0], // Крест
-            'n4': [0,0,0,0,0,0,0, 0,1,0,0,0,1,0, 0,0,1,0,1,0,0, 0,0,0,1,0,0,0, 0,0,1,0,1,0,0, 0,1,0,0,0,1,0, 0,0,0,0,0,0,0], // X-форма
-            'n5': [0,0,0,0,0,0,0, 0,1,1,1,1,1,0, 0,0,0,0,0,1,0, 0,1,1,1,1,1,0, 0,1,0,0,0,0,0, 0,1,1,1,1,1,0, 0,0,0,0,0,0,0], // Z-зигзаг
-            'n6': [0,1,1,1,1,1,0, 0,1,0,0,0,1,0, 0,1,1,1,1,1,0, 0,1,0,0,0,1,0, 0,1,1,1,1,1,0, 0,0,0,0,0,0,0, 0,0,0,0,0,0,0], // B-блок
-            'n7': [0,0,0,0,0,0,0, 0,1,1,1,1,1,0, 0,0,0,1,0,0,0, 0,0,0,1,0,0,0, 0,0,0,1,0,0,0, 0,0,0,1,0,0,0, 0,0,0,0,0,0,0], // T-образный
-            'n8': [0,1,0,1,0,1,0, 0,1,0,1,0,1,0, 0,1,0,1,0,1,0, 0,1,0,1,0,1,0, 0,1,0,1,0,1,0, 0,1,0,1,0,1,0, 0,1,0,1,0,1,0], // Полосы
-            'n9': [1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1]  // Зебра горизонт
+            's':   [1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1] // Solid
         };
 
         // --- 2. CORE ORNAMENT FUNCTION (Restored Logic) ---
@@ -510,25 +487,12 @@
                     if(i18n[key]) el.textContent = i18n[key][lang];
                 });
             },
-save() {
+
+            save() {
                 const link = document.createElement('a');
                 link.download = 'qrnament-sync.png';
                 link.href = this.els.canvas.toDataURL();
                 link.click();
-            },
-
-            async share() {
-                if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: 'QRnament Art',
-                            text: 'Посмотри, какую мандалу я создал в QRnament!',
-                            url: window.location.href
-                        });
-                    } catch (err) { console.log('Share error'); }
-                } else {
-                    alert("Твой браузер не поддерживает Share. Просто скопируй ссылку!");
-                }
             }
         };
 
