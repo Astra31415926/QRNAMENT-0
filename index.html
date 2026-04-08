@@ -127,11 +127,11 @@
             'n9': [1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1]  // Зебра горизонт
         };
 
-   function drawSnowflake(ctx, nCount, pxSize, usePats, pal, smart) {
+  function drawSnowflake(ctx, nCount, pxSize, usePats, pal, smart) {
     const imgSize = nCount * pxSize;
     const blockPx = 7 * pxSize;
+    const center = imgSize / 2;
 
-    // 1. СОЗДАЕМ ТКАНЬ (Полотно с узорами без симметрии)
     const patternCanvas = document.createElement('canvas');
     patternCanvas.width = imgSize;
     patternCanvas.height = imgSize;
@@ -154,25 +154,34 @@
         const pSize = blockPx / 7;
         for (let i = 0; i < 49; i++) {
           if (pat[i] === 1) {
-            pCtx.fillRect(
-              c * blockPx + (i % 7) * pSize, 
-              r * blockPx + Math.floor(i / 7) * pSize, 
-              pSize + 0.5, 
-              pSize + 0.5
-            );
+            pCtx.fillRect(c * blockPx + (i % 7) * pSize, r * blockPx + Math.floor(i / 7) * pSize, pSize + 0.5, pSize + 0.5);
           }
         }
       }
     }
 
-    // 2. СБОРКА (Метод калейдоскопа через трафарет)
     ctx.save();
-    ctx.translate(imgSize / 2, imgSize / 2);
+    ctx.translate(center, center);
 
     for (let i = 0; i < 8; i++) {
       ctx.save();
       ctx.rotate((i * 45) * Math.PI / 180);
       if (i % 2 === 1) ctx.scale(1, -1);
+
+      // Маска режет от центра координат (0,0)
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(center, 0);
+      ctx.lineTo(center, center); 
+      ctx.closePath();
+      ctx.clip(); 
+
+      // Накладываем полотно так, чтобы его центр (center, center) совпал с центром вращения (0,0)
+      ctx.drawImage(patternCanvas, -center, -center);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
 
       // Маска-трафарет 45 градусов (режет пиксели блоков)
       ctx.beginPath();
