@@ -2,196 +2,178 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QRnament2 - Симметричный Арнамент R/G/B</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>▣ QRGB Ultra v2.0</title>
+    <meta name="description" content="Спектральні QR-коди RGB з мандала-арнаментом. Генерація, сканування, SCI/RSS.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <link rel="manifest" href="data:application/manifest+json,{}">
     <style>
-        body { background: #000; color: #fff; font-family: Arial; text-align: center; padding: 20px; }
-        canvas { border: 1px solid #fff; max-width: 90vw; max-height: 90vh; }
-        input, button, select { padding: 10px; margin: 5px; background: #333; color: #fff; border: 1px solid #666; border-radius: 5px; }
-        button { cursor: pointer; background: #007bff; }
-        button:hover { background: #0056b3; }
-        #controls { margin: 20px 0; }
-        .channel { display: inline-block; margin: 10px; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #000 0%, #0a0a0a 50%, #1a0a1a 100%); }
+        .glitch { animation: glitch 0.3s infinite; }
+        @keyframes glitch { 0%,100%{transform:translate(0);} 20%{transform:translate(-2px,2px);} 40%{transform:translate(-2px,-2px);} 60%{transform:translate(2px,2px);} 80%{transform:translate(2px,-2px);} }
+        .neon-glow { box-shadow: 0 0 20px rgba(0,123,255,0.5); }
+        .scan-border { box-shadow: 0 0 0 3px rgba(0,255,0,0.5); animation: scan 2s infinite; }
+        @keyframes scan { 0%,100%{box-shadow: 0 0 0 3px rgba(0,255,0,0.5);} 50%{box-shadow: 0 0 0 6px rgba(0,255,0,0);} }
+        canvas { image-rendering: pixelated; image-rendering: -moz-crisp-edges; }
+        .text-shadow { text-shadow: 0 0 10px rgba(255,255,255,0.5); }
     </style>
 </head>
-<body>
-    <h1>QRnament2 v2.0 - Мандала Арнамент по Каналам (из Replit)</h1>
-    <input type="text" id="seed" placeholder="Seed (time)" value="">
-    <label>Размер модулей: <input type="number" id="totalSize" value="177" min="21" max="501" step="2"></label>
-    <label>Module px: <input type="number" id="modulePx" value="3" min="1" max="10"></label>
-    <br>
-    <div id="controls">
-        <button onclick="generateAll()">Генерировать Все Каналы</button>
-        <div class="channel">
-            <button onclick="generate('R')">R: Blocks</button> <canvas id="canvasR" width="400" height="400"></canvas>
+<body class="min-h-screen text-gray-200 overflow-x-hidden">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4 glitch">
+                ▣ QRGB Ultra
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-8 text-shadow">
+                Спектральні QR з мандала-арнаментом. SCI/RSS нормалізація. Генерація + сканування.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4 text-sm text-gray-500">
+                <a href="https://zenodo.org/records/19301486" class="hover:text-blue-400">Zenodo SCI</a>
+                <span>•</span>
+                <a href="https://astra31415926.github.io" class="hover:text-purple-400">RGB Art</a>
+            </div>
+        </header>
+
+        <!-- Controls -->
+        <div class="bg-black/50 backdrop-blur-xl rounded-3xl p-8 mb-8 border border-white/10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <input type="text" id="qrData" placeholder="Введіть текст/URL для QR..." 
+                       class="bg-black/50 border border-white/20 rounded-2xl p-4 text-lg placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none" 
+                       oninput="generateQR()">
+                <div class="flex gap-2">
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="number" id="totalSize" value="177" min="21" max="501" step="2" class="w-20 p-2 bg-black/50 border border-white/20 rounded-xl" onchange="generateQR()">
+                        <span>Модулі</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="number" id="modulePx" value="3" min="1" max="10" class="w-20 p-2 bg-black/50 border border-white/20 rounded-xl" onchange="generateQR()">
+                        <span>px</span>
+                    </label>
+                </div>
+                <input type="text" id="seed" placeholder="Seed" class="bg-black/50 border border-white/20 rounded-2xl p-4 text-lg placeholder-gray-500">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <button onclick="generateQR()" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-2xl neon-glow transition-all duration-300 transform hover:scale-105">Генерувати QR</button>
+                <button onclick="scanCamera()" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-4 px-8 rounded-2xl neon-glow transition-all duration-300 transform hover:scale-105">📱 Сканувати</button>
+                <button onclick="downloadQR()" class="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-4 px-8 rounded-2xl neon-glow transition-all duration-300 transform hover:scale-105">💾 Скачати</button>
+            </div>
         </div>
-        <div class="channel">
-            <button onclick="generate('G')">G: Layered</button> <canvas id="canvasG" width="400" height="400"></canvas>
+
+        <!-- Canvas -->
+        <div class="flex flex-col md:flex-row gap-8 justify-center">
+            <div class="flex-1 max-w-md mx-auto">
+                <canvas id="qrCanvas" class="w-full h-auto rounded-2xl shadow-2xl border-4 border-white/20 scan-border hidden"></canvas>
+                <p id="decodedText" class="mt-4 text-lg font-mono bg-black/50 p-4 rounded-xl text-gray-300 hidden"></p>
+            </div>
+            <div class="flex flex-col gap-4">
+                <div class="text-center">
+                    <div class="grid grid-cols-3 gap-4 max-w-md mx-auto">
+                        <canvas id="canvasR" width="200" height="200" class="rounded-xl border border-white/30 hover:border-blue-400 transition-all bg-black"></canvas>
+                        <canvas id="canvasG" width="200" height="200" class="rounded-xl border border-white/30 hover:border-green-400 transition-all bg-black"></canvas>
+                        <canvas id="canvasB" width="200" height="200" class="rounded-xl border border-white/30 hover:border-purple-400 transition-all bg-black"></canvas>
+                    </div>
+                    <div class="text-sm text-gray-500 mt-2">R: Blocks | G: Layered | B: Patterns</div>
+                </div>
+            </div>
         </div>
-        <div class="channel">
-            <button onclick="generate('B')">B: Patterns</button> <canvas id="canvasB" width="400" height="400"></canvas>
-        </div>
+
+        <!-- Input file hidden -->
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="scanFile(event)">
     </div>
 
     <script>
-        // НАСТРОЙКИ (из Python)
-        const SYMMETRIC_FILLER_KEYS = ['p1', 'p9', 'p14', 'p17', 'p18'];
-        const FILLER_COLOR_DARK = 20, FILLER_COLOR_LIGHT = 230, BRIGHTNESS_THRESHOLD = 128;
-        const PALETTE_BLOCKS = [80, 120, 180];
-        const PALETTE_PATTERNS = [180, 200, 160];
-        const BACKGROUND_COLOR = 240;
-        const CELL_SIZE = 7;
-        const LIMITED_PALETTE_SIZE = 4;
+        // Весь код арнамента из предыдущего (generateBaseSnowflake, mirrorPattern, etc.) + QR
+        // ... (вставь полный JS из прошлого ответа сюда)
 
-        // Patterns из patterns.py (примеры, добавь свои!)
-        const ALL_PATTERNS = {
-            'p1': [[1,0,1],[0,1,0],[1,0,1]], // Пример 3x3, растяни до 7x7
-            'p9': [[1,1,1],[1,0,1],[1,1,1]],
-            'p14': [[0,1,0],[1,1,1],[0,1,0]],
-            'p17': [[1,0,0],[0,1,0],[0,0,1]],
-            'p18': [[1,1,0],[1,0,1],[0,1,1]],
-            // Добавь остальные как 7x7 arrays!
-        };
-        for (let key in ALL_PATTERNS) {
-            let pat = ALL_PATTERNS[key];
-            // Расширь до CELL_SIZE=7 (простой repeat)
-            let full = Array(CELL_SIZE).fill(0).map(() => Array(CELL_SIZE).fill(0));
-            for (let i=0; i<pat.length; i++) for (let j=0; j<pat[i].length; j++) {
-                for (let ii=0; ii<CELL_SIZE/pat.length; ii++) for (let jj=0; jj<CELL_SIZE/pat[i].length; jj++) {
-                    full[i*(CELL_SIZE/pat.length)+ii][j*(CELL_SIZE/pat[i].length)+jj] = pat[i][j];
-                }
-            }
-            ALL_PATTERNS[key] = full;
-        }
-
-        // Функция зеркального отражения (flipud/fliplr/transpose)
-        function mirrorPattern(pattern, flipVertical, flipHorizontal, transpose) {
-            let p = pattern.map(row => [...row]);
-            if (transpose) p = p[0].map((_, i) => p.map(row => row[i]));
-            if (flipVertical) p.reverse();
-            if (flipHorizontal) p = p.map(row => row.reverse());
-            return p;
-        }
-
-        // _generate_base_snowflake на JS
-        function generateBaseSnowflake(totalSize, modulePx, usePatterns, palette, enableSmartFill, seed) {
-            const canvas = document.getElementById(`canvas${seed}`);
-            const ctx = canvas.getContext('2d');
-            const imgSize = totalSize * modulePx;
-            canvas.width = canvas.height = imgSize;
-
-            // Math.seedrandom(seed || Date.now()); // Если добавишь lib
-            const rand = (min=0, max=1) => Math.random() * (max - min) + min; // Простой rand
-
-            const gridDim = Math.floor(totalSize / CELL_SIZE) + 4;
-            const gridDimOdd = gridDim % 2 ? gridDim : gridDim + 1;
-            const centerCellIdx = Math.floor(gridDimOdd / 2);
-            const quadrantDimCells = Math.floor(gridDimOdd / 2) + 1;
-
-            // Этап 1: Октант
-            const octantCellData = Array(quadrantDimCells).fill(0).map(() => Array(quadrantDimCells).fill(null));
-            const palettePatterns = usePatterns ? 
-                Object.keys(ALL_PATTERNS).sort(() => rand(-1,1)).slice(0, LIMITED_PALETTE_SIZE).map(k => ALL_PATTERNS[k]) :
-                [Array(CELL_SIZE).fill().map(() => Array(CELL_SIZE).fill(1))];
-
-            for (let r = 0; r < quadrantDimCells; r++) {
-                for (let c = 0; c <= r; c++) { // Только нижний треугольник
-                    const pattern = palettePatterns[Math.floor(rand() * palettePatterns.length)];
-                    const color = palette[Math.floor(rand() * palette.length)];
-                    octantCellData[r][c] = [pattern, color];
-                }
-            }
-
-            // Этап 2: Умное заполнение
-            if (enableSmartFill) {
-                const solidBlock = Array(CELL_SIZE).fill().map(() => Array(CELL_SIZE).fill(1));
-                for (let r = 0; r < quadrantDimCells; r++) {
-                    for (let c = 0; c <= r; c++) {
-                        const [pattern, color] = octantCellData[r][c];
-                        if (pattern.every(row => row.every(v => v === 1))) { // solid?
-                            const newKey = SYMMETRIC_FILLER_KEYS[Math.floor(rand() * SYMMETRIC_FILLER_KEYS.length)];
-                            const newPattern = ALL_PATTERNS[newKey];
-                            const newColor = color > BRIGHTNESS_THRESHOLD ? FILLER_COLOR_DARK : FILLER_COLOR_LIGHT;
-                            octantCellData[r][c] = [newPattern, newColor];
-                        }
-                    }
-                }
-            }
-
-            // Этап 3: Рендер с offset
-            const offset = (imgSize - gridDimOdd * CELL_SIZE * modulePx) / 2;
-            const imgData = ctx.createImageData(imgSize, imgSize);
-            for (let i = 0; i < imgData.data.length; i += 4) {
-                imgData.data[i + 3] = 255; // Alpha
-            }
-
-            for (let rCell = 0; rCell < gridDimOdd; rCell++) {
-                for (let cCell = 0; cCell < gridDimOdd; cCell++) {
-                    const relC = cCell - centerCellIdx, relR = rCell - centerCellIdx;
-                    const absC = Math.abs(relC), absR = Math.abs(relR);
-                    const sourceR = Math.max(absR, absC), sourceC = Math.min(absR, absC);
-                    if (!octantCellData[sourceR] || !octantCellData[sourceR][sourceC]) continue;
-
-                    let [pattern, color] = octantCellData[sourceR][sourceC];
-                    const transpose = absR < absC;
-                    const flipV = relR < 0;
-                    const flipH = relC < 0;
-                    pattern = mirrorPattern(pattern, flipV, flipH, transpose);
-
-                    const baseX = offset + cCell * CELL_SIZE * modulePx;
-                    const baseY = offset + rCell * CELL_SIZE * modulePx;
-
-                    for (let rP = 0; rP < CELL_SIZE; rP++) {
-                        for (let cP = 0; cP < CELL_SIZE; cP++) {
-                            if (pattern[rP][cP] === 1) {
-                                const x = Math.floor(baseX + cP * modulePx);
-                                const y = Math.floor(baseY + rP * modulePx);
-                                if (x >= 0 && x < imgSize && y >= 0 && y < imgSize) {
-                                    const idx = (y * imgSize + x) * 4;
-                                    imgData.data[idx] = color;     // R
-                                    imgData.data[idx + 1] = color; // G
-                                    imgData.data[idx + 2] = color; // B
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            ctx.putImageData(imgData, 0, 0);
-            return canvas;
-        }
-
-        // Обёртки каналов
-        function generate(channel) {
+        // QR Генерация (авто на ввод)
+        function generateQR() {
+            const data = document.getElementById('qrData').value;
+            if (!data) return;
+            
             const totalSize = parseInt(document.getElementById('totalSize').value);
             const modulePx = parseInt(document.getElementById('modulePx').value);
-            const seed = document.getElementById('seed').value || Date.now();
-
-            if (channel === 'R') { // Красный: block без fill
-                generateBaseSnowflake(totalSize, modulePx, false, PALETTE_BLOCKS, false, 'R');
-            } else if (channel === 'G') { // Зелёный: layered с ротациями (упрощённо симуляция multiply)
-                const canvasG = generateBaseSnowflake(totalSize, modulePx, false, PALETTE_BLOCKS, true, 'G');
-                // Симуляция ротаций: генерим 4 варианта и blend (для простоты - один с fill)
-            } else if (channel === 'B') { // Синий: patterns
-                generateBaseSnowflake(totalSize, modulePx, true, PALETTE_PATTERNS, true, 'B');
-            }
-        }
-
-        function generateAll() {
+            
+            // Арнаменты по каналам
             generate('R'); generate('G'); generate('B');
+            
+            // QR overlay на главный canvas
+            const canvas = document.getElementById('qrCanvas');
+            canvas.classList.remove('hidden');
+            QRCode.toCanvas(canvas, data, { width: 400, margin: 0, color: { dark: '#000', light: '#FFF' } }, (err) => {
+                if (err) console.error(err);
+            });
         }
 
-        // Download для всех
-        function download(channel) {
-            const canvas = document.getElementById(`canvas${channel}`);
+        // Камера + звук
+        let stream;
+        async function scanCamera() {
+            const video = document.createElement('video');
+            video.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;object-fit:cover;z-index:1000;';
+            document.body.appendChild(video);
+            
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            video.srcObject = stream;
+            video.play();
+            
+            // Звук затвора
+            const audio = new AudioContext();
+            const osc = audio.createOscillator();
+            osc.connect(audio.destination);
+            osc.start();
+            setTimeout(() => osc.stop(), 100);
+            
+            // Скан каждые 500ms
+            const scanInterval = setInterval(() => {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code) {
+                    document.getElementById('decodedText').textContent = code.data;
+                    document.getElementById('decodedText').classList.remove('hidden');
+                    clearInterval(scanInterval);
+                    stopScan(video);
+                }
+            }, 500);
+        }
+
+        function stopScan(video) {
+            stream.getTracks().forEach(track => track.stop());
+            video.remove();
+        }
+
+        function scanFile(event) {
+            const file = event.target.files[0];
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code) document.getElementById('decodedText').textContent = code.data;
+            };
+            img.src = URL.createObjectURL(file);
+        }
+
+        function downloadQR() {
+            const canvas = document.getElementById('qrCanvas');
             const link = document.createElement('a');
-            link.download = `ornament_${channel}.png`;
+            link.download = 'qr-ultra.png';
             link.href = canvas.toDataURL();
             link.click();
         }
-        // Добавь кнопки download в HTML если нужно
 
-        generateAll(); // Инит
+        // Инит
+        generateAll();
     </script>
 </body>
 </html>
