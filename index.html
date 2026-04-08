@@ -269,10 +269,62 @@
             },
 
             toggleMenu() { this.els.menu.classList.toggle('open'); },
-
-            generate() {
+generate() {
                 const text = this.els.input.value;
                 if (!text) { this.clearCanvas(); this.updateStatus("Waiting..."); return; }
+
+                try {
+                    const utf8Text = unescape(encodeURIComponent(text));
+                    const qr = qrcode(0, 'M');
+                    qr.addData(utf8Text);
+                    qr.make();
+                    
+                    const moduleCount = qr.getModuleCount();
+                    const quietZone = 4;
+                    const totalModules = moduleCount + quietZone * 2;
+                    const modSize = 1024 / totalModules;
+                    
+                    const ctx = this.els.ctx;
+                    
+                    // 1. Очистка фона
+                    ctx.globalCompositeOperation = "source-over";
+                    ctx.fillStyle = "#000";
+                    ctx.fillRect(0, 0, 1024, 1024);
+
+                    // 2. КРАСНЫЙ СЛОЙ (Базовая геометрия из Replit)
+                    ctx.fillStyle = "#FF0000";
+                    for (let r = 0; r < totalModules; r += 2) {
+                        for (let c = 0; c < totalModules; c += 2) {
+                            if (Math.random() > 0.5) {
+                                ctx.fillRect(c * modSize, r * modSize, modSize * 2, modSize * 2);
+                            }
+                        }
+                    }
+
+                    // 3. ЗЕЛЕНЫЙ СЛОЙ (Твои 7x7 орнаменты через Difference)
+                    ctx.globalCompositeOperation = "difference";
+                    const gridG = this.build7x7Grid(totalModules);
+                    ctx.fillStyle = "#00FF00";
+                    this.drawGrid(ctx, gridG, totalModules, modSize);
+
+                    // 4. СИНИЙ СЛОЙ (QR-код для сканирования)
+                    ctx.globalCompositeOperation = "screen";
+                    ctx.fillStyle = "#0000FF";
+                    for (let r = 0; r < moduleCount; r++) {
+                        for (let c = 0; c < moduleCount; c++) {
+                            if (qr.isDark(r, c)) {
+                                ctx.fillRect((c + quietZone) * modSize, (r + quietZone) * modSize, modSize, modSize);
+                            }
+                        }
+                    }
+
+                    ctx.globalCompositeOperation = "source-over";
+                    this.updateStatus("Spectral Logic Active");
+                } catch (e) {
+                    console.error(e);
+                    this.updateStatus("Error");
+                }
+            },
 
                 try {
                     const utf8Text = unescape(encodeURIComponent(text));
