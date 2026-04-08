@@ -2,137 +2,141 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>QRnament Replit Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QRnament v3.3 // Fixed Symmetry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style>
-        body { background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: sans-serif; }
-        canvas { background: #000; border: 2px solid #333; box-shadow: 0 0 50px rgba(255,255,255,0.1); cursor: crosshair; }
-        .ui { margin-bottom: 15px; text-align: center; }
-        button { padding: 10px 25px; font-size: 16px; background: #fff; color: #000; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { transform: scale(1.05); background: #ccc; }
+        body { background: #000; color: #fff; font-family: sans-serif; }
+        canvas { width: 100%; height: auto; image-rendering: pixelated; border: 1px solid #333; border-radius: 20px; }
+        .neon-btn { border: 1px solid #00ff41; color: #00ff41; transition: 0.3s; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
+        .neon-btn:hover { background: #00ff41; color: #000; box-shadow: 0 0 20px #00ff41; }
     </style>
 </head>
-<body>
+<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto gap-4">
 
-    <div class="ui">
-        <h1>QRnament 2.0 (RGB Layers)</h1>
-        <button onclick="render()">СГЕНЕРИРОВАТЬ НОВЫЙ</button>
+    <header class="text-center py-4">
+        <h1 class="text-2xl font-black italic">QR<span class="text-[#00ff41]">NAMENT</span></h1>
+        <p class="text-[10px] opacity-50 uppercase tracking-widest">Symmetric Engine v3.3</p>
+    </header>
+
+    <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-none outline-none h-20 text-white placeholder-zinc-600 focus:ring-1 ring-[#00ff41]" placeholder="Введите текст..."></textarea>
+
+    <div class="relative aspect-square w-full">
+        <canvas id="canvas" width="1024" height="1024"></canvas>
     </div>
-    <canvas id="mainCanvas"></canvas>
+
+    <button onclick="App.save()" class="w-full py-4 rounded-2xl neon-btn">Save PNG</button>
+    <p id="status" class="text-center text-[10px] text-[#00ff41] font-bold">READY</p>
 
 <script>
-// --- КОНСТАНТЫ ИЗ ТЗ ---
-const MODS = 177; 
-const PX = 3; 
+// --- КОНСТАНТЫ ОРНАМЕНТА ---
 const CELL = 7;
 const PAL_BLOCKS = [80, 120, 180];
 const PAL_PATTERNS = [180, 200, 160];
 const FILL_KEYS = ['p1', 'p9', 'p14', 'p17', 'p18'];
-
-// Паттерны 7x7 из твоего patterns.py
 const PATS = {
     'p1':  [0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0],
     'p9':  [1,1,1,1,1,1,1, 1,0,0,0,0,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,0,0,0,0,1, 1,1,1,1,1,1,1],
     'p14': [1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1],
     'p17': [1,1,0,1,0,1,1, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 1,1,0,1,0,1,1],
-    'p18': [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,1,1,1,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0]
+    'p18': [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,1,1,1,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0],
+    's1':  new Array(49).fill(1)
 };
 
-function drawSnowflake(ctx, usePats, pal, smart) {
-    const gridDim = Math.floor(MODS / CELL) + 5;
-    const finalDim = gridDim % 2 === 0 ? gridDim + 1 : gridDim;
-    const center = Math.floor(finalDim / 2);
-    const quad = center + 1;
-    const imgSize = MODS * PX;
+// --- ДВИЖОК СИММЕТРИИ ---
+const OrnamentEngine = {
+    getOrnamentValue(nCount, x, y, config) {
+        const center = (nCount - 1) / 2;
+        let relX = x - center;
+        let relY = y - center;
 
-    let octant = [];
-    for (let r = 0; r < quad; r++) {
-        octant[r] = [];
-        for (let c = 0; c <= r; c++) {
-            let color = pal[Math.floor(Math.random() * pal.length)];
-            let pat = usePats ? PATS[Object.keys(PATS)[Math.floor(Math.random()*5)]] : new Array(49).fill(1);
-            if (smart && !usePats) {
-                pat = PATS[FILL_KEYS[Math.floor(Math.random()*FILL_KEYS.length)]];
-                color = color > 128 ? 20 : 230;
-            }
-            octant[r][c] = { pat, color };
+        // Зеркальное отражение для 8-кратной симметрии
+        let absX = Math.abs(relX);
+        let absY = Math.abs(relY);
+        if (absX < absY) [absX, absY] = [absY, absX];
+
+        // Сид для ячейки (детерминированный рандом)
+        const cellX = Math.floor(absX / (nCount / (Math.floor(nCount/CELL)+5)));
+        const cellY = Math.floor(absY / (nCount / (Math.floor(nCount/CELL)+5)));
+        const seed = cellX * 1337 + cellY;
+        const rand = () => { let s = Math.sin(seed) * 10000; return s - Math.floor(s); };
+
+        let pattern = config.usePatterns ? PATS[Object.keys(PATS)[Math.floor(rand()*5)]] : PATS['s1'];
+        let color = config.palette[Math.floor(rand()*config.palette.length)];
+
+        if (config.smartFill && !config.usePatterns) {
+            pattern = PATS[FILL_KEYS[Math.floor(rand()*5)]];
+            color = color > 128 ? 40 : 220;
         }
+
+        // Локальные координаты внутри паттерна 7x7
+        const px = Math.floor((x % CELL));
+        const py = Math.floor((y % CELL));
+        
+        if (pattern[py * 7 + px] === 1) {
+            const dist = Math.sqrt(relX*relX + relY*relY) / (nCount/1.4);
+            return Math.floor(color * (0.5 + 0.5 * dist));
+        }
+        return 0;
     }
+};
 
-    const offset = (imgSize - finalDim * CELL * PX) / 2;
+const App = {
+    init() {
+        this.canvas = document.getElementById('canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.input = document.getElementById('main-input');
+        this.input.addEventListener('input', () => this.generate());
+        this.generate();
+    },
 
-    for (let rC = 0; rC < finalDim; rC++) {
-        for (let cC = 0; cC < finalDim; cC++) {
-            let relC = cC - center, relR = rC - center;
-            let absC = Math.abs(relC), absR = Math.abs(relR);
-            let sR = Math.max(absR, absC), sC = Math.min(absR, absC);
-            let data = octant[sR][sC];
+    generate() {
+        const text = this.input.value || "QRnament";
+        const qr = qrcode(0, 'M');
+        qr.addData(unescape(encodeURIComponent(text)));
+        qr.make();
 
-            for (let i = 0; i < 49; i++) {
-                let pr = Math.floor(i / 7), pc = i % 7;
-                let tr = pr, tc = pc;
-                if (absR < absC) [tr, tc] = [tc, tr];
-                if (relR < 0) tr = 6 - tr;
-                if (relC < 0) tc = 6 - tc;
+        const modCount = qr.getModuleCount();
+        const quiet = 4;
+        const totalMod = modCount + quiet * 2;
+        const modSize = 1024 / totalMod;
 
-                if (data.pat[tr * 7 + tc] === 1) {
-                    let x = offset + cC * CELL * PX + pc * PX;
-                    let y = offset + rC * CELL * PX + pr * PX;
-                    
-                    // ТОНАЛЬНАЯ РАСТЯЖКА
-                    let d = Math.sqrt(((x-imgSize/2)/(imgSize/2))**2 + ((y-imgSize/2)/(imgSize/2))**2);
-                    let fCol = Math.floor(data.color * (0.6 + 0.4 * d));
-                    
-                    ctx.fillStyle = `rgb(${fCol},${fCol},${fCol})`;
-                    ctx.fillRect(x, y, PX, PX);
+        this.ctx.fillStyle = "#000";
+        this.ctx.fillRect(0, 0, 1024, 1024);
+
+        for (let y = 0; y < totalMod; y++) {
+            for (let x = 0; x < totalMod; x++) {
+                // RED: Базовые блоки
+                const r = OrnamentEngine.getOrnamentValue(totalMod, x, y, { usePatterns: false, palette: PAL_BLOCKS });
+                
+                // GREEN: Разность (Patterns vs SmartBlocks)
+                const g1 = OrnamentEngine.getOrnamentValue(totalMod, x, y, { usePatterns: false, palette: PAL_BLOCKS, smartFill: true });
+                const g2 = OrnamentEngine.getOrnamentValue(totalMod, x, y, { usePatterns: true, palette: PAL_PATTERNS });
+                const g = 255 - Math.abs(g1 - g2);
+
+                // BLUE: QR Data
+                let b = 0;
+                if (x >= quiet && x < totalMod - quiet && y >= quiet && y < totalMod - quiet) {
+                    if (qr.isDark(y - quiet, x - quiet)) b = 255;
                 }
+
+                this.ctx.fillStyle = `rgb(${r},${g},${b})`;
+                this.ctx.fillRect(Math.floor(x * modSize), Math.floor(y * modSize), Math.ceil(modSize), Math.ceil(modSize));
             }
         }
+        document.getElementById('status').innerText = `GRID: ${totalMod}x${totalMod} // SYNC OK`;
+    },
+
+    save() {
+        const a = document.createElement('a');
+        a.download = 'qrnament.png';
+        a.href = this.canvas.toDataURL();
+        a.click();
     }
-}
+};
 
-function render() {
-    const canvas = document.getElementById('mainCanvas');
-    const ctx = canvas.getContext('2d');
-    const size = MODS * PX;
-    canvas.width = canvas.height = size;
-
-    const rC = document.createElement('canvas'); rC.width = rC.height = size;
-    const gC = document.createElement('canvas'); gC.width = gC.height = size;
-    const rCtx = rC.getContext('2d');
-    const gCtx = gC.getContext('2d');
-
-    // КРАСНЫЙ КАНАЛ (Блоки)
-    drawSnowflake(rCtx, false, PAL_BLOCKS, false);
-    
-    // ЗЕЛЕНЫЙ КАНАЛ (Узоры + Difference)
-    const t1 = document.createElement('canvas'); t1.width = t1.height = size;
-    const t2 = document.createElement('canvas'); t2.width = t2.height = size;
-    drawSnowflake(t1.getContext('2d'), false, PAL_BLOCKS, true);
-    drawSnowflake(t2.getContext('2d'), true, PAL_PATTERNS, true);
-    
-    let d1 = t1.getContext('2d').getImageData(0,0,size,size);
-    let d2 = t2.getContext('2d').getImageData(0,0,size,size);
-    for(let i=0; i<d1.data.length; i+=4) {
-        let diff = Math.abs(d1.data[i] - d2.data[i]);
-        d1.data[i] = d1.data[i+1] = d1.data[i+2] = 255 - diff;
-    }
-    gCtx.putImageData(d1, 0, 0);
-
-    // СБОРКА ФИНАЛА
-    let imgR = rCtx.getImageData(0,0,size,size);
-    let imgG = gCtx.getImageData(0,0,size,size);
-    let final = ctx.createImageData(size,size);
-
-    for(let i=0; i<final.data.length; i+=4) {
-        final.data[i] = imgR.data[i];     // Red
-        final.data[i+1] = imgG.data[i+1]; // Green
-        final.data[i+2] = 150;            // Blue (константа для стиля)
-        final.data[i+3] = 255;            // Alpha
-    }
-    ctx.putImageData(final, 0, 0);
-}
-
-render();
+document.addEventListener('DOMContentLoaded', () => App.init());
 </script>
 </body>
 </html>
