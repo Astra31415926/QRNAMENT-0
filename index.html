@@ -1,251 +1,163 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament v4.0 // Octant Mandala</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-
+    <title>QRnament v3.2 - Generative Art</title>
     <style>
-        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
-        .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
-        #canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-        #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: none; }
-        .scan-line { position: absolute; left: 0; right: 0; height: 4px; background: #00ff41; box-shadow: 0 0 20px #00ff41; top: 0; z-index: 20; display: none; }
-        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-        .flash-overlay { position: absolute; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 30; transition: opacity 0.1s; }
-        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 100; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; padding: 2rem; }
-        .menu-overlay.open { transform: translateX(0); }
-        .neon-btn-green { background: rgba(0, 255, 65, 0.05); border: 1px solid #00ff41; box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); transition: all 0.2s; }
-        .neon-btn-green:active { transform: scale(0.96); }
+        body { background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+        canvas { background: #f0f0f0; box-shadow: 0 0 20px rgba(0,0,0,0.5); margin-top: 20px; max-width: 90vw; }
+        .controls { margin: 20px; }
+        button { padding: 10px 20px; cursor: pointer; background: #444; color: white; border: none; border-radius: 5px; }
+        button:hover { background: #666; }
     </style>
 </head>
-<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
+<body>
 
-    <div id="menu-overlay" class="menu-overlay">
-        <button onclick="App.toggleMenu()" class="self-end text-3xl text-zinc-500">&times;</button>
-        <div class="space-y-6 text-sm">
-            <h2 class="text-xl font-black italic text-white">QRnament v4.0</h2>
-            <p class="text-zinc-500">Система спектрального кодування з використанням 8-кратної симетрії та алгоритму Smart Fill.</p>
-        </div>
+    <h2>QRnament 2: Replit Logic (JS Edition)</h2>
+    <div class="controls">
+        <button onclick="render()">Сгенерировать новый</button>
     </div>
+    <canvas id="mainCanvas"></canvas>
 
-    <header class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-black tracking-tighter uppercase"><span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span></h1>
-        <button onclick="App.toggleMenu()" class="p-2 border border-white/10 rounded-lg">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-        </button>
-    </header>
+<script>
+/** * ТЕХНИЧЕСКИЕ НАСТРОЙКИ (ИЗ ТЗ)
+ */
+const TOTAL_SIZE_MODS = 177;
+const MOD_PIXEL_SIZE = 3;
+const CELL_SIZE = 7;
+const PALETTE_BLOCKS = [80, 120, 180];
+const PALETTE_PATTERNS = [180, 200, 160];
+const BG_COLOR = 240;
+const FILLER_KEYS = ['p1', 'p9', 'p14', 'p17', 'p18'];
 
-    <div class="mb-4 relative">
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-green-500 outline-none h-16 text-sm" placeholder="Введіть текст..."></textarea>
-    </div>
+// Базовые паттерны 7x7
+const ALL_PATTERNS = {
+    'p1':  [0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0],
+    'p9':  [1,1,1,1,1,1,1, 1,0,0,0,0,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,0,0,0,0,1, 1,1,1,1,1,1,1],
+    'p14': [1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1],
+    'p17': [1,1,0,1,0,1,1, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 1,1,0,1,0,1,1],
+    'p18': [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,1,1,1,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0]
+};
 
-    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 overflow-hidden mb-4">
-        <canvas id="canvas" width="1024" height="1024"></canvas>
-        <video id="video" playsinline></video>
-        <div id="scan-line" class="scan-line"></div>
-        <div id="flash-layer" class="flash-overlay"></div>
-    </div>
+/**
+ * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+ */
+function getPattern(key) {
+    return ALL_PATTERNS[key] || new Array(49).fill(1);
+}
 
-    <div class="flex flex-col gap-3">
-        <button onclick="App.save()" class="w-full py-4 neon-btn-green text-white font-black rounded-2xl text-xs uppercase">Save PNG</button>
-        <div class="grid grid-cols-2 gap-3">
-            <button onclick="App.startCamera()" class="py-4 neon-btn-green text-white font-bold rounded-2xl text-xs uppercase">Cam Scan</button>
-            <button onclick="document.getElementById('file-input').click()" class="py-4 neon-btn-green text-white font-bold rounded-2xl text-xs uppercase">File Scan</button>
-        </div>
-        <input type="file" id="file-input" accept="image/*" class="hidden">
-    </div>
+function renderBaseSnowflake(ctx, usePatterns, palette, enableSmartFill) {
+    const gridDim = Math.floor(TOTAL_SIZE_MODS / CELL_SIZE) + 4;
+    const finalGridDim = gridDim % 2 === 0 ? gridDim + 1 : gridDim;
+    const centerIdx = Math.floor(finalGridDim / 2);
+    const quadDim = centerIdx + 1;
 
-    <p id="status" class="text-center text-[10px] text-green-500 uppercase font-bold tracking-widest mt-4">Ready</p>
+    // Генерируем октант
+    let octant = [];
+    for (let r = 0; r < quadDim; r++) {
+        octant[r] = [];
+        for (let c = 0; c <= r; c++) {
+            let color = palette[Math.floor(Math.random() * palette.length)];
+            let pattern = usePatterns 
+                ? getPattern(Object.keys(ALL_PATTERNS)[Math.floor(Math.random() * 5)])
+                : new Array(49).fill(1);
 
-    <script>
-        // --- 1. ПАТТЕРНИ 7x7 ---
-        const SPRITE_LIB = [
-            [[0,1,0,1,0,1,0],[1,0,0,0,0,0,1],[0,0,1,1,1,0,0],[1,0,1,1,1,0,1],[0,0,1,1,1,0,0],[1,0,0,0,0,0,1],[0,1,0,1,0,1,0]], // p1 (Sym)
-            [[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0]], // p2
-            [[1,1,1,1,1,1,1],[0,0,0,0,0,0,1],[1,1,1,1,1,0,1],[1,0,0,0,1,0,1],[1,0,1,1,1,0,1],[1,0,0,0,0,0,1],[1,1,1,1,1,1,1]], // p3
-            [[1,1,1,1,1,1,1],[1,0,0,0,0,0,0],[1,0,1,1,1,1,1],[1,0,1,0,0,0,1],[1,0,1,1,1,0,1],[1,0,0,0,0,0,1],[1,1,1,1,1,1,1]], // p4
-            [[1,1,1,1,1,1,1],[1,0,0,0,0,0,1],[1,0,1,1,1,0,1],[1,0,1,0,1,0,1],[1,0,1,0,0,0,1],[1,0,1,1,1,1,1],[1,0,0,0,0,0,0]], // p5
-            [[0,0,0,0,0,1,1],[0,0,0,0,1,1,0],[0,0,0,1,1,0,0],[1,1,1,1,1,1,1],[0,0,0,1,1,0,0],[0,0,0,0,1,1,0],[0,0,0,0,0,1,1]], // p6
-            [[1,1,1,1,1,0,0],[1,0,0,0,0,0,0],[1,0,0,0,0,0,0],[1,1,1,1,1,1,1],[0,0,0,0,0,0,1],[0,0,0,0,0,0,1],[0,0,1,1,1,1,1]], // p7
-            [[0,0,0,0,1,1,1],[0,0,0,1,1,1,0],[0,0,1,1,1,0,0],[0,1,1,1,0,0,0],[1,1,1,0,0,0,0],[1,1,0,0,0,0,0],[1,0,0,0,0,0,0]], // p8
-            [[1,1,0,0,0,1,1],[1,1,0,0,0,1,1],[0,0,1,0,1,0,0],[0,0,0,1,0,0,0],[0,0,1,0,1,0,0],[1,1,0,0,0,1,1],[1,1,0,0,0,1,1]], // p9 (Sym)
-            [[0,0,0,1,0,0,0],[0,0,1,1,1,0,0],[0,1,1,1,1,1,0],[1,1,1,1,1,1,1],[0,0,0,1,0,0,0],[0,0,0,1,0,0,0],[0,0,0,1,0,0,0]], // p10
-            [[1,1,1,1,1,1,0],[1,0,0,0,0,1,0],[1,0,1,1,1,1,0],[1,0,1,0,0,0,0],[1,0,1,1,1,1,1],[1,0,0,0,0,0,0],[1,1,1,1,1,1,1]], // p11
-            [[0,0,0,0,0,0,1],[0,0,0,0,0,1,1],[0,0,0,0,1,1,0],[0,0,0,1,1,0,0],[0,0,1,1,0,0,0],[0,1,1,0,0,0,0],[1,1,0,0,0,0,0]], // p12
-            [[0,0,0,1,0,0,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[1,0,0,0,0,0,1],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,0,0,1,0,0,0]], // p13
-            [[1,0,0,0,0,0,1],[0,1,0,0,0,1,0],[0,0,1,0,1,0,0],[0,0,0,1,0,0,0],[0,0,1,0,1,0,0],[0,1,0,0,0,1,0],[1,0,0,0,0,0,1]], // p14 (Sym)
-            [[0,0,1,1,1,0,0],[0,0,1,1,1,0,0],[1,1,0,1,0,1,1],[1,1,1,0,1,1,1],[1,1,0,1,0,1,1],[0,0,1,1,1,0,0],[0,0,1,1,1,0,0]], // p15
-            [[0,0,1,0,1,0,0],[0,1,0,0,0,1,0],[1,0,0,0,0,0,1],[0,0,0,0,0,0,0],[1,0,0,0,0,0,1],[0,1,0,0,0,1,0],[0,0,1,0,1,0,0]], // p16
-            [[0,1,1,0,1,1,0],[1,0,1,0,1,0,1],[1,1,0,0,0,1,1],[0,0,0,1,0,0,0],[1,1,0,0,0,1,1],[1,0,1,0,1,0,1],[0,1,1,0,1,1,0]], // p17 (Sym)
-            [[0,1,0,1,0,1,0],[1,1,0,1,0,1,1],[0,0,0,1,0,0,0],[1,1,1,1,1,1,1],[0,0,0,1,0,0,0],[1,1,0,1,0,1,1],[0,1,0,1,0,1,0]], // p18 (Sym)
-            [[1,1,1,1,1,1,1],[0,1,1,1,1,1,1],[0,0,1,1,1,1,1],[0,0,0,1,1,1,1],[0,0,0,0,1,1,1],[0,0,0,0,0,1,1],[0,0,0,0,0,0,1]]  // p19
-        ];
-
-        const SYM_INDEXES = [0, 8, 13, 16, 17]; // p1, p9, p14, p17, p18
-
-        const App = {
-            init() {
-                this.els = {
-                    canvas: document.getElementById('canvas'),
-                    ctx: document.getElementById('canvas').getContext('2d'),
-                    input: document.getElementById('main-input'),
-                    video: document.getElementById('video'),
-                    status: document.getElementById('status'),
-                    scanLine: document.getElementById('scan-line'),
-                    flash: document.getElementById('flash-layer'),
-                    menu: document.getElementById('menu-overlay')
-                };
-                this.els.input.addEventListener('input', () => this.generate());
-                document.getElementById('file-input').addEventListener('change', (e) => this.handleFile(e));
-                this.generate();
-            },
-
-            toggleMenu() { this.els.menu.classList.toggle('open'); },
-
-            generate() {
-                const text = this.els.input.value || "QRnament";
-                const qr = qrcode(0, 'M');
-                qr.addData(text);
-                qr.make();
-
-                const mc = qr.getModuleCount();
-                const qz = 4;
-                const total = mc + qz * 2;
-                const modSize = 1024 / total;
-
-                const ctx = this.els.ctx;
-                ctx.globalCompositeOperation = "source-over";
-                ctx.fillStyle = "#000";
-                ctx.fillRect(0,0,1024,1024);
-
-                // LAYER R: Red Octant Grid
-                const gridR = this.buildOctantGrid(total);
-                ctx.fillStyle = "#FF0000";
-                this.drawGrid(gridR, total, modSize);
-
-                // LAYER G: Green (Difference Layer)
-                const gridG = this.buildOctantGrid(total);
-                ctx.globalCompositeOperation = "difference";
-                ctx.fillStyle = "#00FF00";
-                this.drawGrid(gridG, total, modSize);
-
-                // LAYER B: Blue (QR Data)
-                ctx.globalCompositeOperation = "screen";
-                ctx.fillStyle = "#0000FF";
-                for(let r=0; r<mc; r++) {
-                    for(let c=0; c<mc; c++) {
-                        if(qr.isDark(r,c)) {
-                            ctx.fillRect((c+qz)*modSize, (r+qz)*modSize, modSize, modSize);
-                        }
-                    }
-                }
-                this.els.status.innerText = "Generated: " + text.substring(0,10);
-            },
-
-            buildOctantGrid(size) {
-                const grid = Array(size).fill(0).map(() => Array(size).fill(0));
-                const center = Math.floor(size / 2);
-                const octantMap = new Map();
-                const blocks = Math.ceil((size / 2) / 7) + 1;
-
-                for (let by = 0; by < blocks; by++) {
-                    for (let bx = by; bx < blocks; bx++) {
-                        // Smart Fill: Check if block is on the diagonal (bx == by)
-                        const isDiagonal = (bx === by);
-                        let pIdx;
-                        if (isDiagonal) {
-                            pIdx = SYM_INDEXES[Math.floor(Math.random() * SYM_INDEXES.length)];
-                        } else {
-                            pIdx = Math.floor(Math.random() * SPRITE_LIB.length);
-                        }
-
-                        const p = SPRITE_LIB[pIdx];
-                        const tr = Math.random() > 0.5; // Transpose chance
-
-                        for (let py = 0; py < 7; py++) {
-                            for (let px = 0; px < 7; px++) {
-                                let val = tr ? p[px][py] : p[py][px];
-                                if (val) {
-                                    let rx = (bx * 7) + px - 3;
-                                    let ry = (by * 7) + py - 3;
-                                    if (rx >= ry && ry >= 0) octantMap.set(`${rx},${ry}`, 1);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                octantMap.forEach((v, k) => {
-                    const [x, y] = k.split(',').map(Number);
-                    const pts = [[x,y],[y,x],[-x,y],[-y,x],[x,-y],[y,-x],[-x,-y],[-y,-x]];
-                    pts.forEach(([px, py]) => {
-                        const ax = center + px, ay = center + py;
-                        if (ax >= 0 && ax < size && ay >= 0 && ay < size) grid[ay][ax] = 1;
-                    });
-                });
-                return grid;
-            },
-
-            drawGrid(grid, size, mod) {
-                for(let r=0; r<size; r++) {
-                    for(let c=0; c<size; c++) {
-                        if(grid[r][c]) this.els.ctx.fillRect(c*mod, r*mod, mod+0.5, mod+0.5);
-                    }
-                }
-            },
-
-            startCamera() {
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => {
-                    this.els.video.srcObject = s;
-                    this.els.video.style.display = 'block';
-                    this.els.video.play();
-                    this.scanLoop();
-                });
-            },
-
-            scanLoop() {
-                if (this.els.video.readyState === this.els.video.HAVE_ENOUGH_DATA) {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 1024; canvas.height = 1024;
-                    const c = canvas.getContext('2d');
-                    c.drawImage(this.els.video, 0, 0, 1024, 1024);
-                    const img = c.getImageData(0,0,1024,1024);
-                    // Blue Channel focus
-                    for(let i=0; i<img.data.length; i+=4) {
-                        const b = img.data[i+2];
-                        img.data[i] = b; img.data[i+1] = b;
-                    }
-                    const code = jsQR(img.data, 1024, 1024);
-                    if (code) {
-                        this.els.input.value = code.data;
-                        this.generate();
-                        this.stopCamera();
-                        return;
-                    }
-                }
-                requestAnimationFrame(() => this.scanLoop());
-            },
-
-            stopCamera() {
-                if(this.els.video.srcObject) this.els.video.srcObject.getTracks().forEach(t => t.stop());
-                this.els.video.style.display = 'none';
-            },
-
-            save() {
-                const a = document.createElement('a');
-                a.download = 'qrnament_v4.png';
-                a.href = this.els.canvas.toDataURL();
-                a.click();
+            if (enableSmartFill && !usePatterns) {
+                const key = FILLER_KEYS[Math.floor(Math.random() * FILLER_KEYS.length)];
+                pattern = getPattern(key);
+                color = color > 128 ? 20 : 230;
             }
-        };
+            octant[r][c] = { pattern, color };
+        }
+    }
 
-        window.onload = () => App.init();
-    </script>
+    const imgSize = TOTAL_SIZE_MODS * MOD_PIXEL_SIZE;
+    const offset = (imgSize - finalGridDim * CELL_SIZE * MOD_PIXEL_SIZE) / 2;
+    const halfImg = imgSize / 2;
+
+    for (let rCell = 0; rCell < finalGridDim; rCell++) {
+        for (let cCell = 0; cCell < finalGridDim; cCell++) {
+            let relC = cCell - centerIdx;
+            let relR = rCell - centerIdx;
+            let absC = Math.abs(relC);
+            let absR = Math.abs(relR);
+
+            let sR = Math.max(absR, absC);
+            let sC = Math.min(absR, absC);
+            let cellData = octant[sR][sC];
+
+            let baseX = offset + cCell * CELL_SIZE * MOD_PIXEL_SIZE;
+            let baseY = offset + rCell * CELL_SIZE * MOD_PIXEL_SIZE;
+
+            for (let i = 0; i < 49; i++) {
+                let pr = Math.floor(i / 7);
+                let pc = i % 7;
+
+                // Трансформация симметрии
+                let targetPr = pr, targetPc = pc;
+                if (absR < absC) [targetPr, targetPc] = [targetPc, targetPr];
+                if (relR < 0) targetPr = 6 - targetPr;
+                if (relC < 0) targetPc = 6 - targetPc;
+
+                if (cellData.pattern[targetPr * 7 + targetPc] === 1) {
+                    let x0 = baseX + pc * MOD_PIXEL_SIZE;
+                    let y0 = baseY + pr * MOD_PIXEL_SIZE;
+
+                    // --- ТОНАЛЬНАЯ РАСТЯЖКА (ГРАДИЕНТ) ---
+                    let dx = (x0 - halfImg) / halfImg;
+                    let dy = (y0 - halfImg) / halfImg;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    let grad = 0.6 + 0.4 * dist;
+                    let finalColor = Math.floor(cellData.color * grad);
+
+                    ctx.fillStyle = `rgb(${finalColor},${finalColor},${finalColor})`;
+                    ctx.fillRect(x0, y0, MOD_PIXEL_SIZE, MOD_PIXEL_SIZE);
+                }
+            }
+        }
+    }
+}
+
+function render() {
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const size = TOTAL_SIZE_MODS * MOD_PIXEL_SIZE;
+    canvas.width = size;
+    canvas.height = size;
+
+    // Фон
+    ctx.fillStyle = `rgb(${BG_COLOR},${BG_COLOR},${BG_COLOR})`;
+    ctx.fillRect(0, 0, size, size);
+
+    // Временные канвасы для слоев (R и G каналы)
+    const offCanvas1 = document.createElement('canvas');
+    const offCanvas2 = document.createElement('canvas');
+    offCanvas1.width = offCanvas2.width = size;
+    offCanvas1.height = offCanvas2.height = size;
+    const ctx1 = offCanvas1.getContext('2d');
+    const ctx2 = offCanvas2.getContext('2d');
+
+    // Генерация слоев
+    renderBaseSnowflake(ctx1, false, PALETTE_BLOCKS, true);  // Слой блоков
+    renderBaseSnowflake(ctx2, true, PALETTE_PATTERNS, true); // Слой узоров
+
+    // Финальное смешивание (имитация ImageChops.difference)
+    const imgData1 = ctx1.getImageData(0,0,size,size);
+    const imgData2 = ctx2.getImageData(0,0,size,size);
+    const finalData = ctx.createImageData(size,size);
+
+    for (let i = 0; i < imgData1.data.length; i += 4) {
+        // Логика Difference
+        let diff = Math.abs(imgData1.data[i] - imgData2.data[i]);
+        let val = 255 - diff; // Инверсия для светлого фона
+        finalData.data[i] = finalData.data[i+1] = finalData.data[i+2] = val;
+        finalData.data[i+3] = 255;
+    }
+    ctx.putImageData(finalData, 0, 0);
+}
+
+// Первый запуск
+render();
+</script>
 </body>
 </html>
