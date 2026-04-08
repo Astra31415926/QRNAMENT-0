@@ -1,163 +1,72 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>QRnament v3.2 - Generative Art</title>
-    <style>
-        body { background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
-        canvas { background: #f0f0f0; box-shadow: 0 0 20px rgba(0,0,0,0.5); margin-top: 20px; max-width: 90vw; }
-        .controls { margin: 20px; }
-        button { padding: 10px 20px; cursor: pointer; background: #444; color: white; border: none; border-radius: 5px; }
-        button:hover { background: #666; }
-    </style>
-</head>
-<body>
-
-    <h2>QRnament 2: Replit Logic (JS Edition)</h2>
-    <div class="controls">
-        <button onclick="render()">Сгенерировать новый</button>
-    </div>
-    <canvas id="mainCanvas"></canvas>
-
-<script>
-/** * ТЕХНИЧЕСКИЕ НАСТРОЙКИ (ИЗ ТЗ)
+/** * КРАСНЫЙ КАНАЛ (Блочный орнамент)
+ * По ТЗ: base_snowflake(False, PALETTE_BLOCKS, False)
  */
-const TOTAL_SIZE_MODS = 177;
-const MOD_PIXEL_SIZE = 3;
-const CELL_SIZE = 7;
-const PALETTE_BLOCKS = [80, 120, 180];
-const PALETTE_PATTERNS = [180, 200, 160];
-const BG_COLOR = 240;
-const FILLER_KEYS = ['p1', 'p9', 'p14', 'p17', 'p18'];
-
-// Базовые паттерны 7x7
-const ALL_PATTERNS = {
-    'p1':  [0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0],
-    'p9':  [1,1,1,1,1,1,1, 1,0,0,0,0,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,0,0,0,0,1, 1,1,1,1,1,1,1],
-    'p14': [1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1],
-    'p17': [1,1,0,1,0,1,1, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 1,1,0,1,0,1,1],
-    'p18': [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,1,1,1,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0]
-};
-
-/**
- * ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
- */
-function getPattern(key) {
-    return ALL_PATTERNS[key] || new Array(49).fill(1);
+function renderRedChannel(ctx, size) {
+    // Чистые блоки, без паттернов внутри и без умного заполнения
+    renderBaseSnowflake(ctx, false, PALETTE_BLOCKS, false);
 }
 
-function renderBaseSnowflake(ctx, usePatterns, palette, enableSmartFill) {
-    const gridDim = Math.floor(TOTAL_SIZE_MODS / CELL_SIZE) + 4;
-    const finalGridDim = gridDim % 2 === 0 ? gridDim + 1 : gridDim;
-    const centerIdx = Math.floor(finalGridDim / 2);
-    const quadDim = centerIdx + 1;
+/**
+ * ЗЕЛЕНЫЙ КАНАЛ (Сложный узор)
+ * По ТЗ: разность между блоками и перемноженными паттернами
+ */
+function renderGreenChannel(ctx, size) {
+    const tempCanvas1 = document.createElement('canvas');
+    const tempCanvas2 = document.createElement('canvas');
+    tempCanvas1.width = tempCanvas2.width = size;
+    tempCanvas1.height = tempCanvas2.height = size;
+    const tCtx1 = tempCanvas1.getContext('2d');
+    const tCtx2 = tempCanvas2.getContext('2d');
 
-    // Генерируем октант
-    let octant = [];
-    for (let r = 0; r < quadDim; r++) {
-        octant[r] = [];
-        for (let c = 0; c <= r; c++) {
-            let color = palette[Math.floor(Math.random() * palette.length)];
-            let pattern = usePatterns 
-                ? getPattern(Object.keys(ALL_PATTERNS)[Math.floor(Math.random() * 5)])
-                : new Array(49).fill(1);
+    // 1. Блоки с умным заполнением
+    renderBaseSnowflake(tCtx1, false, PALETTE_BLOCKS, true);
+    // 2. Паттерны с умным заполнением
+    renderBaseSnowflake(tCtx2, true, PALETTE_PATTERNS, true);
 
-            if (enableSmartFill && !usePatterns) {
-                const key = FILLER_KEYS[Math.floor(Math.random() * FILLER_KEYS.length)];
-                pattern = getPattern(key);
-                color = color > 128 ? 20 : 230;
-            }
-            octant[r][c] = { pattern, color };
-        }
+    const data1 = tCtx1.getImageData(0, 0, size, size);
+    const data2 = tCtx2.getImageData(0, 0, size, size);
+    
+    // Имитация ImageChops.multiply и rotate(180/90) здесь упрощена для скорости, 
+    // но сохраняет логику наложения слоев через разность:
+    for (let i = 0; i < data1.data.length; i += 4) {
+        let diff = Math.abs(data1.data[i] - data2.data[i]);
+        data1.data[i] = data1.data[i+1] = data1.data[i+2] = 255 - diff;
     }
-
-    const imgSize = TOTAL_SIZE_MODS * MOD_PIXEL_SIZE;
-    const offset = (imgSize - finalGridDim * CELL_SIZE * MOD_PIXEL_SIZE) / 2;
-    const halfImg = imgSize / 2;
-
-    for (let rCell = 0; rCell < finalGridDim; rCell++) {
-        for (let cCell = 0; cCell < finalGridDim; cCell++) {
-            let relC = cCell - centerIdx;
-            let relR = rCell - centerIdx;
-            let absC = Math.abs(relC);
-            let absR = Math.abs(relR);
-
-            let sR = Math.max(absR, absC);
-            let sC = Math.min(absR, absC);
-            let cellData = octant[sR][sC];
-
-            let baseX = offset + cCell * CELL_SIZE * MOD_PIXEL_SIZE;
-            let baseY = offset + rCell * CELL_SIZE * MOD_PIXEL_SIZE;
-
-            for (let i = 0; i < 49; i++) {
-                let pr = Math.floor(i / 7);
-                let pc = i % 7;
-
-                // Трансформация симметрии
-                let targetPr = pr, targetPc = pc;
-                if (absR < absC) [targetPr, targetPc] = [targetPc, targetPr];
-                if (relR < 0) targetPr = 6 - targetPr;
-                if (relC < 0) targetPc = 6 - targetPc;
-
-                if (cellData.pattern[targetPr * 7 + targetPc] === 1) {
-                    let x0 = baseX + pc * MOD_PIXEL_SIZE;
-                    let y0 = baseY + pr * MOD_PIXEL_SIZE;
-
-                    // --- ТОНАЛЬНАЯ РАСТЯЖКА (ГРАДИЕНТ) ---
-                    let dx = (x0 - halfImg) / halfImg;
-                    let dy = (y0 - halfImg) / halfImg;
-                    let dist = Math.sqrt(dx*dx + dy*dy);
-                    let grad = 0.6 + 0.4 * dist;
-                    let finalColor = Math.floor(cellData.color * grad);
-
-                    ctx.fillStyle = `rgb(${finalColor},${finalColor},${finalColor})`;
-                    ctx.fillRect(x0, y0, MOD_PIXEL_SIZE, MOD_PIXEL_SIZE);
-                }
-            }
-        }
-    }
+    ctx.putImageData(data1, 0, 0);
 }
 
 function render() {
     const canvas = document.getElementById('mainCanvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext('2d');
     const size = TOTAL_SIZE_MODS * MOD_PIXEL_SIZE;
     canvas.width = size;
     canvas.height = size;
 
-    // Фон
-    ctx.fillStyle = `rgb(${BG_COLOR},${BG_COLOR},${BG_COLOR})`;
-    ctx.fillRect(0, 0, size, size);
+    // Создаем холсты для каналов
+    const rCanvas = document.createElement('canvas');
+    const gCanvas = document.createElement('canvas');
+    rCanvas.width = gCanvas.width = size;
+    rCanvas.height = gCanvas.height = size;
+    
+    // Рендерим логику каждого канала
+    renderRedChannel(rCanvas.getContext('2d'), size);
+    renderGreenChannel(gCanvas.getContext('2d'), size);
 
-    // Временные канвасы для слоев (R и G каналы)
-    const offCanvas1 = document.createElement('canvas');
-    const offCanvas2 = document.createElement('canvas');
-    offCanvas1.width = offCanvas2.width = size;
-    offCanvas1.height = offCanvas2.height = size;
-    const ctx1 = offCanvas1.getContext('2d');
-    const ctx2 = offCanvas2.getContext('2d');
+    const rData = rCanvas.getContext('2d').getImageData(0, 0, size, size);
+    const gData = gCanvas.getContext('2d').getImageData(0, 0, size, size);
+    const finalData = ctx.createImageData(size, size);
 
-    // Генерация слоев
-    renderBaseSnowflake(ctx1, false, PALETTE_BLOCKS, true);  // Слой блоков
-    renderBaseSnowflake(ctx2, true, PALETTE_PATTERNS, true); // Слой узоров
-
-    // Финальное смешивание (имитация ImageChops.difference)
-    const imgData1 = ctx1.getImageData(0,0,size,size);
-    const imgData2 = ctx2.getImageData(0,0,size,size);
-    const finalData = ctx.createImageData(size,size);
-
-    for (let i = 0; i < imgData1.data.length; i += 4) {
-        // Логика Difference
-        let diff = Math.abs(imgData1.data[i] - imgData2.data[i]);
-        let val = 255 - diff; // Инверсия для светлого фона
-        finalData.data[i] = finalData.data[i+1] = finalData.data[i+2] = val;
+    // СБОРКА ФИНАЛЬНОГО ИЗОБРАЖЕНИЯ (R + G + B)
+    for (let i = 0; i < rData.data.length; i += 4) {
+        // Красный канал (R)
+        finalData.data[i] = rData.data[i];     
+        // Зеленый канал (G)
+        finalData.data[i+1] = gData.data[i+1]; 
+        // Синий канал (B) — пока оставляем белым или под QR
+        finalData.data[i+2] = 255;             
+        // Альфа
         finalData.data[i+3] = 255;
     }
+    
     ctx.putImageData(finalData, 0, 0);
 }
-
-// Первый запуск
-render();
-</script>
-</body>
-</html>
