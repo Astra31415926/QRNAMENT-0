@@ -1,72 +1,138 @@
-/** * КРАСНЫЙ КАНАЛ (Блочный орнамент)
- * По ТЗ: base_snowflake(False, PALETTE_BLOCKS, False)
- */
-function renderRedChannel(ctx, size) {
-    // Чистые блоки, без паттернов внутри и без умного заполнения
-    renderBaseSnowflake(ctx, false, PALETTE_BLOCKS, false);
-}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>QRnament Replit Edition</title>
+    <style>
+        body { background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: sans-serif; }
+        canvas { background: #000; border: 2px solid #333; box-shadow: 0 0 50px rgba(255,255,255,0.1); cursor: crosshair; }
+        .ui { margin-bottom: 15px; text-align: center; }
+        button { padding: 10px 25px; font-size: 16px; background: #fff; color: #000; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { transform: scale(1.05); background: #ccc; }
+    </style>
+</head>
+<body>
 
-/**
- * ЗЕЛЕНЫЙ КАНАЛ (Сложный узор)
- * По ТЗ: разность между блоками и перемноженными паттернами
- */
-function renderGreenChannel(ctx, size) {
-    const tempCanvas1 = document.createElement('canvas');
-    const tempCanvas2 = document.createElement('canvas');
-    tempCanvas1.width = tempCanvas2.width = size;
-    tempCanvas1.height = tempCanvas2.height = size;
-    const tCtx1 = tempCanvas1.getContext('2d');
-    const tCtx2 = tempCanvas2.getContext('2d');
+    <div class="ui">
+        <h1>QRnament 2.0 (RGB Layers)</h1>
+        <button onclick="render()">СГЕНЕРИРОВАТЬ НОВЫЙ</button>
+    </div>
+    <canvas id="mainCanvas"></canvas>
 
-    // 1. Блоки с умным заполнением
-    renderBaseSnowflake(tCtx1, false, PALETTE_BLOCKS, true);
-    // 2. Паттерны с умным заполнением
-    renderBaseSnowflake(tCtx2, true, PALETTE_PATTERNS, true);
+<script>
+// --- КОНСТАНТЫ ИЗ ТЗ ---
+const MODS = 177; 
+const PX = 3; 
+const CELL = 7;
+const PAL_BLOCKS = [80, 120, 180];
+const PAL_PATTERNS = [180, 200, 160];
+const FILL_KEYS = ['p1', 'p9', 'p14', 'p17', 'p18'];
 
-    const data1 = tCtx1.getImageData(0, 0, size, size);
-    const data2 = tCtx2.getImageData(0, 0, size, size);
-    
-    // Имитация ImageChops.multiply и rotate(180/90) здесь упрощена для скорости, 
-    // но сохраняет логику наложения слоев через разность:
-    for (let i = 0; i < data1.data.length; i += 4) {
-        let diff = Math.abs(data1.data[i] - data2.data[i]);
-        data1.data[i] = data1.data[i+1] = data1.data[i+2] = 255 - diff;
+// Паттерны 7x7 из твоего patterns.py
+const PATS = {
+    'p1':  [0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0],
+    'p9':  [1,1,1,1,1,1,1, 1,0,0,0,0,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,0,0,0,0,1, 1,1,1,1,1,1,1],
+    'p14': [1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1],
+    'p17': [1,1,0,1,0,1,1, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 1,1,0,1,0,1,1],
+    'p18': [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,1,1,1,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0]
+};
+
+function drawSnowflake(ctx, usePats, pal, smart) {
+    const gridDim = Math.floor(MODS / CELL) + 5;
+    const finalDim = gridDim % 2 === 0 ? gridDim + 1 : gridDim;
+    const center = Math.floor(finalDim / 2);
+    const quad = center + 1;
+    const imgSize = MODS * PX;
+
+    let octant = [];
+    for (let r = 0; r < quad; r++) {
+        octant[r] = [];
+        for (let c = 0; c <= r; c++) {
+            let color = pal[Math.floor(Math.random() * pal.length)];
+            let pat = usePats ? PATS[Object.keys(PATS)[Math.floor(Math.random()*5)]] : new Array(49).fill(1);
+            if (smart && !usePats) {
+                pat = PATS[FILL_KEYS[Math.floor(Math.random()*FILL_KEYS.length)]];
+                color = color > 128 ? 20 : 230;
+            }
+            octant[r][c] = { pat, color };
+        }
     }
-    ctx.putImageData(data1, 0, 0);
+
+    const offset = (imgSize - finalDim * CELL * PX) / 2;
+
+    for (let rC = 0; rC < finalDim; rC++) {
+        for (let cC = 0; cC < finalDim; cC++) {
+            let relC = cC - center, relR = rC - center;
+            let absC = Math.abs(relC), absR = Math.abs(relR);
+            let sR = Math.max(absR, absC), sC = Math.min(absR, absC);
+            let data = octant[sR][sC];
+
+            for (let i = 0; i < 49; i++) {
+                let pr = Math.floor(i / 7), pc = i % 7;
+                let tr = pr, tc = pc;
+                if (absR < absC) [tr, tc] = [tc, tr];
+                if (relR < 0) tr = 6 - tr;
+                if (relC < 0) tc = 6 - tc;
+
+                if (data.pat[tr * 7 + tc] === 1) {
+                    let x = offset + cC * CELL * PX + pc * PX;
+                    let y = offset + rC * CELL * PX + pr * PX;
+                    
+                    // ТОНАЛЬНАЯ РАСТЯЖКА
+                    let d = Math.sqrt(((x-imgSize/2)/(imgSize/2))**2 + ((y-imgSize/2)/(imgSize/2))**2);
+                    let fCol = Math.floor(data.color * (0.6 + 0.4 * d));
+                    
+                    ctx.fillStyle = `rgb(${fCol},${fCol},${fCol})`;
+                    ctx.fillRect(x, y, PX, PX);
+                }
+            }
+        }
+    }
 }
 
 function render() {
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d');
-    const size = TOTAL_SIZE_MODS * MOD_PIXEL_SIZE;
-    canvas.width = size;
-    canvas.height = size;
+    const size = MODS * PX;
+    canvas.width = canvas.height = size;
 
-    // Создаем холсты для каналов
-    const rCanvas = document.createElement('canvas');
-    const gCanvas = document.createElement('canvas');
-    rCanvas.width = gCanvas.width = size;
-    rCanvas.height = gCanvas.height = size;
+    const rC = document.createElement('canvas'); rC.width = rC.height = size;
+    const gC = document.createElement('canvas'); gC.width = gC.height = size;
+    const rCtx = rC.getContext('2d');
+    const gCtx = gC.getContext('2d');
+
+    // КРАСНЫЙ КАНАЛ (Блоки)
+    drawSnowflake(rCtx, false, PAL_BLOCKS, false);
     
-    // Рендерим логику каждого канала
-    renderRedChannel(rCanvas.getContext('2d'), size);
-    renderGreenChannel(gCanvas.getContext('2d'), size);
-
-    const rData = rCanvas.getContext('2d').getImageData(0, 0, size, size);
-    const gData = gCanvas.getContext('2d').getImageData(0, 0, size, size);
-    const finalData = ctx.createImageData(size, size);
-
-    // СБОРКА ФИНАЛЬНОГО ИЗОБРАЖЕНИЯ (R + G + B)
-    for (let i = 0; i < rData.data.length; i += 4) {
-        // Красный канал (R)
-        finalData.data[i] = rData.data[i];     
-        // Зеленый канал (G)
-        finalData.data[i+1] = gData.data[i+1]; 
-        // Синий канал (B) — пока оставляем белым или под QR
-        finalData.data[i+2] = 255;             
-        // Альфа
-        finalData.data[i+3] = 255;
+    // ЗЕЛЕНЫЙ КАНАЛ (Узоры + Difference)
+    const t1 = document.createElement('canvas'); t1.width = t1.height = size;
+    const t2 = document.createElement('canvas'); t2.width = t2.height = size;
+    drawSnowflake(t1.getContext('2d'), false, PAL_BLOCKS, true);
+    drawSnowflake(t2.getContext('2d'), true, PAL_PATTERNS, true);
+    
+    let d1 = t1.getContext('2d').getImageData(0,0,size,size);
+    let d2 = t2.getContext('2d').getImageData(0,0,size,size);
+    for(let i=0; i<d1.data.length; i+=4) {
+        let diff = Math.abs(d1.data[i] - d2.data[i]);
+        d1.data[i] = d1.data[i+1] = d1.data[i+2] = 255 - diff;
     }
-    
-    ctx.putImageData(finalData, 0, 0);
+    gCtx.putImageData(d1, 0, 0);
+
+    // СБОРКА ФИНАЛА
+    let imgR = rCtx.getImageData(0,0,size,size);
+    let imgG = gCtx.getImageData(0,0,size,size);
+    let final = ctx.createImageData(size,size);
+
+    for(let i=0; i<final.data.length; i+=4) {
+        final.data[i] = imgR.data[i];     // Red
+        final.data[i+1] = imgG.data[i+1]; // Green
+        final.data[i+2] = 150;            // Blue (константа для стиля)
+        final.data[i+3] = 255;            // Alpha
+    }
+    ctx.putImageData(final, 0, 0);
 }
+
+render();
+</script>
+</body>
+</html>
