@@ -127,247 +127,315 @@
             'n9': [1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1]  // Зебра горизонт
         };
 
-     function drawSnowflake(ctx, nCount, pxSize, usePats, pal, smart) {
-            const imgSize = nCount * pxSize;
-            const CELL_SIZE = 7;
-            const blockPx = CELL_SIZE * pxSize;
-            
-            // 1. Создаем временный холст для ОДНОГО сегмента (1/8 мандалы)
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = imgSize;
-            tempCanvas.height = imgSize;
-            const tCtx = tempCanvas.getContext('2d');
+   function drawSnowflake(ctx, nCount, pxSize, usePats, pal, smart) {
+    const imgSize = nCount * pxSize;
+    const blockPx = 7 * pxSize;
 
-            // Рассчитываем сетку для одного треугольника
-            let gridDim = Math.floor(nCount / CELL_SIZE) + 5;
-            const center = Math.floor(gridDim / 2);
-            const quad = center + 1;
-            const offset = (imgSize - gridDim * blockPx) / 2;
+    // 1. СОЗДАЕМ ТКАНЬ (Полотно с узорами без симметрии)
+    const patternCanvas = document.createElement('canvas');
+    patternCanvas.width = imgSize;
+    patternCanvas.height = imgSize;
+    const pCtx = patternCanvas.getContext('2d');
 
-            // 2. Рисуем "сырой" треугольник из блоков на временном холсте
-            for (let r = 0; r < quad; r++) {
-                for (let c = 0; c <= r; c++) {
-                    // Выбираем данные (цвет/паттерн)
-                    let color = pal[Math.floor(Math.random() * pal.length)];
-                    const pKeys = Object.keys(PATS);
-                    let pat = usePats ? PATS[pKeys[Math.floor(Math.random() * pKeys.length)]] : PATS['s'];
-                    
-                    if (smart && !usePats) {
-                        pat = PATS[FILL_KEYS[Math.floor(Math.random() * FILL_KEYS.length)]];
-                        color = color > 128 ? 20 : 230;
-                    }
-
-                    // Рисуем блок в координатах треугольника (нижний правый сектор)
-                    const startX = imgSize / 2 + c * blockPx;
-                    const startY = imgSize / 2 + r * blockPx;
-                    const pSize = blockPx / 7;
-
-                    tCtx.fillStyle = `rgb(${color},${color},${color})`;
-                    for (let i = 0; i < 49; i++) {
-                        if (pat[i] === 1) {
-                            tCtx.fillRect(
-                                startX + (i % 7) * pSize, 
-                                startY + Math.floor(i / 7) * pSize, 
-                                pSize + 0.5, 
-                                pSize + 0.5
-                            );
-                        }
-                    }
-                }
-            }
-
-            // 3. ТЕПЕРЬ ГЛАВНОЕ: Зеркалим готовые пиксели сегмента 8 раз
-            ctx.save();
-            ctx.translate(imgSize / 2, imgSize / 2); // В центр основного холста
-
-            for (let i = 0; i < 8; i++) {
-                ctx.save();
-                ctx.rotate((i * 45) * Math.PI / 180); // Поворот на 45 градусов
-                if (i % 2 === 1) ctx.scale(1, -1);    // Зеркальное отражение каждого второго сегмента
-                
-                // Рисуем сегмент из центра (теперь это просто ПИКСЕЛИ, а не блоки)
-                ctx.drawImage(tempCanvas, -imgSize / 2, -imgSize / 2);
-                ctx.restore();
-            }
-            ctx.restore();
+    const gridCells = Math.ceil(imgSize / blockPx);
+    for (let r = 0; r < gridCells; r++) {
+      for (let c = 0; c < gridCells; c++) {
+        let color = pal[Math.floor(Math.random() * pal.length)];
+        const pKeys = Object.keys(PATS);
+        let pat = usePats ? PATS[pKeys[Math.floor(Math.random() * pKeys.length)]] : PATS['s'];
+        
+        if (smart && !usePats) {
+          const fKeys = (typeof FILL_KEYS !== 'undefined') ? FILL_KEYS : ['p1','p9'];
+          pat = PATS[fKeys[Math.floor(Math.random() * fKeys.length)]];
+          color = color > 128 ? 20 : 230;
         }
-                    // Draw to Main Canvas
-                    // Create temp canvas for final data to draw it centered
-                    const fCvs = document.createElement('canvas');
-                    fCvs.width = fCvs.height = actualSize;
-                    fCvs.getContext('2d').putImageData(final, 0, 0);
-                    
-                    mainCtx.drawImage(fCvs, centeringOffset, centeringOffset);
 
-                    this.updateStatus("Done");
-                } catch (e) {
-                    console.error(e);
-                    this.updateStatus("Error");
+        pCtx.fillStyle = `rgb(${color},${color},${color})`;
+        const pSize = blockPx / 7;
+        for (let i = 0; i < 49; i++) {
+          if (pat[i] === 1) {
+            pCtx.fillRect(
+              c * blockPx + (i % 7) * pSize, 
+              r * blockPx + Math.floor(i / 7) * pSize, 
+              pSize + 0.5, 
+              pSize + 0.5
+            );
+          }
+        }
+      }
+    }
+
+    // 2. СБОРКА (Метод калейдоскопа через трафарет)
+    ctx.save();
+    ctx.translate(imgSize / 2, imgSize / 2);
+
+    for (let i = 0; i < 8; i++) {
+      ctx.save();
+      ctx.rotate((i * 45) * Math.PI / 180);
+      if (i % 2 === 1) ctx.scale(1, -1);
+
+      // Маска-трафарет 45 градусов (режет пиксели блоков)
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(imgSize, 0);
+      ctx.lineTo(imgSize, imgSize); 
+      ctx.closePath();
+      ctx.clip(); 
+
+      // Наложение ткани на вырезанный сектор
+      ctx.drawImage(patternCanvas, -imgSize / 2, -imgSize / 2);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // --- 3. APP MODULE ---
+  const App = {
+    state: { lang: 'ua', frozen: false, isScanning: false },
+    els: {},
+
+    init() {
+      this.els = {
+        canvas: document.getElementById('canvas'),
+        video: document.getElementById('video'),
+        input: document.getElementById('main-input'),
+        status: document.getElementById('status'),
+        scanLine: document.getElementById('scan-line'),
+        flash: document.getElementById('flash-layer'),
+        menu: document.getElementById('menu-overlay'),
+        fileInput: document.getElementById('file-input')
+      };
+      this.els.ctx = this.els.canvas.getContext('2d');
+      
+      this.els.input.addEventListener('input', () => {
+        if (this.state.frozen) this.state.frozen = false;
+        this.generate();
+      });
+      this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
+      document.body.addEventListener('click', () => AudioEngine.init(), { once: true });
+      
+      this.clearCanvas();
+      this.setLang('ua');
+    },
+
+    clearText() {
+      this.els.input.value = "";
+      this.clearCanvas();
+      this.updateStatus("Cleared");
+      AudioEngine.playClick();
+    },
+
+    toggleMenu() { this.els.menu.classList.toggle('open'); },
+
+    generate() {
+      const text = this.els.input.value;
+      if (!text) { this.clearCanvas(); this.updateStatus("Waiting..."); return; }
+
+      try {
+        const utf8Text = unescape(encodeURIComponent(text));
+        const qr = qrcode(0, 'M');
+        qr.addData(utf8Text);
+        qr.make();
+        
+        const moduleCount = qr.getModuleCount();
+        const quietZone = 4;
+        const nCount = moduleCount + quietZone * 2; 
+        const pxSize = Math.floor(1024 / nCount); 
+        const actualSize = nCount * pxSize;
+
+        this.updateStatus(`Rendering ${nCount}x${nCount}`);
+
+        const rCvs = document.createElement('canvas');
+        rCvs.width = rCvs.height = actualSize;
+        drawSnowflake(rCvs.getContext('2d'), nCount, pxSize, false, PAL_BLOCKS, false);
+
+        const gCvs = document.createElement('canvas');
+        gCvs.width = gCvs.height = actualSize;
+        const gCtx = gCvs.getContext('2d');
+        const t1 = document.createElement('canvas');
+        t1.width = t1.height = actualSize;
+        drawSnowflake(t1.getContext('2d'), nCount, pxSize, false, PAL_BLOCKS, true);
+        const t2 = document.createElement('canvas');
+        t2.width = t2.height = actualSize;
+        drawSnowflake(t2.getContext('2d'), nCount, pxSize, true, PAL_PATTERNS, true);
+
+        let d1 = t1.getContext('2d').getImageData(0,0,actualSize,actualSize);
+        let d2 = t2.getContext('2d').getImageData(0,0,actualSize,actualSize);
+        for(let i=0; i<d1.data.length; i+=4) {
+          let val = 255 - Math.abs(d1.data[i] - d2.data[i]);
+          d1.data[i] = d1.data[i+1] = d1.data[i+2] = val;
+        }
+        gCtx.putImageData(d1, 0, 0);
+
+        const mainCtx = this.els.ctx;
+        mainCtx.fillStyle = "#000";
+        mainCtx.fillRect(0, 0, 1024, 1024);
+        const centeringOffset = (1024 - actualSize) / 2;
+
+        let imgR = rCvs.getContext('2d').getImageData(0,0,actualSize,actualSize);
+        let imgG = gCtx.getImageData(0,0,actualSize,actualSize);
+        let final = mainCtx.createImageData(actualSize, actualSize);
+
+        for(let i=0; i<final.data.length; i+=4) {
+          final.data[i] = imgR.data[i];
+          final.data[i+1] = imgG.data[i+1];
+          final.data[i+3] = 255;
+        }
+
+        for (let r = 0; r < moduleCount; r++) {
+          for (let c = 0; c < moduleCount; c++) {
+            if (qr.isDark(r, c)) {
+              let sY = (r + quietZone) * pxSize, sX = (c + quietZone) * pxSize;
+              for(let py=0; py<pxSize; py++) {
+                for(let px=0; px<pxSize; px++) {
+                  final.data[((sY+py)*actualSize + (sX+px))*4 + 2] = 180;
                 }
-            },
-
-            // --- SCANNER LOGIC (Unchanged) ---
-            startCamera() {
-                if(this.state.isScanning) return;
-                this.state.isScanning = true;
-                this.updateStatus("Accessing Camera...");
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                    .then(stream => {
-                        this.els.video.srcObject = stream;
-                        this.els.video.style.display = 'block';
-                        this.els.video.play();
-                        this.updateStatus("Scanning...");
-                        AudioEngine.startScanAtmosphere();
-                        this.scanLoop();
-                    })
-                    .catch(err => { alert("Camera Error: " + err.message); this.stopCamera(); });
-            },
-
-            stopCamera() {
-                this.state.isScanning = false;
-                AudioEngine.stopAll();
-                if(this.els.video.srcObject) this.els.video.srcObject.getTracks().forEach(t => t.stop());
-                this.els.video.style.display = 'none';
-                this.els.scanLine.style.display = 'none';
-            },
-
-            scanLoop() {
-                if (!this.state.isScanning) return;
-                const video = this.els.video;
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    const result = this.processFrame(video, video.videoWidth, video.videoHeight);
-                    if (result) {
-                        this.captureFrame(video, video.videoWidth, video.videoHeight);
-                        this.stopCamera();
-                        this.performRitual(result);
-                        return;
-                    }
-                }
-                requestAnimationFrame(() => this.scanLoop());
-            },
-
-            processFrame(source, w, h) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 1024; canvas.height = 1024;
-                const ctx = canvas.getContext('2d');
-                const aspect = w / h;
-                let sx = 0, sy = 0, sw = w, sh = h;
-                if (aspect > 1) { sw = h; sx = (w - sw) / 2; }
-                else { sh = w; sy = (h - sh) / 2; }
-                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
-                const imageData = ctx.getImageData(0, 0, 1024, 1024);
-                const data = imageData.data;
-                for (let i = 0; i < data.length; i += 4) {
-                    const b = data[i+2];
-                    data[i] = b; data[i+1] = b; data[i+2] = b;
-                }
-                return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
-            },
-
-            captureFrame(source, w, h) {
-                const ctx = this.els.ctx;
-                const aspect = w / h;
-                let sx = 0, sy = 0, sw = w, sh = h;
-                if (aspect > 1) { sw = h; sx = (w - sw) / 2; } 
-                else { sh = w; sy = (h - sh) / 2; }
-                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
-            },
-
-            performRitual(code) {
-                this.state.isScanning = true;
-                AudioEngine.playScan();
-                
-                const line = this.els.scanLine;
-                line.style.display = 'block';
-                line.style.animation = 'pulse 1.5s infinite';
-                line.style.top = '0%';
-                line.style.transition = 'none';
-                void line.offsetHeight;
-                line.style.transition = 'top 2.5s linear';
-                line.style.top = '100%';
-                this.updateStatus("Analyzing...");
-
-                setTimeout(() => {
-                    this.els.flash.style.opacity = '1';
-                    AudioEngine.playResult(!!code);
-                    setTimeout(() => {
-                        this.els.flash.style.opacity = '0';
-                        line.style.animation = 'none';
-                        if (code) {
-                            try { this.els.input.value = decodeURIComponent(escape(code.data)); } catch(e) { this.els.input.value = code.data; }
-                            this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
-                            this.els.ctx.fillRect(0, 0, 1024, 1024);
-                            this.updateStatus("Decoded!");
-                            this.state.frozen = true;
-                        } else {
-                            this.updateStatus("No Data Found");
-                            this.clearCanvas();
-                        }
-                        this.state.isScanning = false;
-                        line.style.display = 'none';
-                    }, 150);
-                }, 2500);
-            },
-
-            handleFile(e) {
-                const file = e.target.files[0];
-                if(!file) return;
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        this.captureFrame(img, img.width, img.height);
-                        const result = this.processFrame(img, img.width, img.height);
-                        this.state.isScanning = true;
-                        AudioEngine.playScan();
-                        this.performRitual(result);
-                    };
-                    img.src = evt.target.result;
-                };
-                reader.readAsDataURL(file);
-                e.target.value = '';
-            },
-
-            clearCanvas() { this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024); },
-            updateStatus(msg) { this.els.status.innerText = msg; },
-            
-            setLang(lang) {
-                this.state.lang = lang;
-                document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
-                document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
-                document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
-                document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
-                
-                const i18n = {
-                    m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
-                    m_tech_text: { ua: "Динамічна синхронізація орнаменту та QR-матриці.", en: "Dynamic synchronization of ornament and QR matrix." }
-                };
-                document.querySelectorAll('[data-i18n]').forEach(el => {
-                    const key = el.getAttribute('data-i18n');
-                    if(i18n[key]) el.textContent = i18n[key][lang];
-                });
-            },
-save() {
-                const link = document.createElement('a');
-                link.download = 'qrnament-sync.png';
-                link.href = this.els.canvas.toDataURL();
-                link.click();
-            },
-
-            async share() {
-                if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: 'QRnament Art',
-                            text: 'Посмотри, какую мандалу я создал в QRnament!',
-                            url: window.location.href
-                        });
-                    } catch (err) { console.log('Share error'); }
-                } else {
-                    alert("Твой браузер не поддерживает Share. Просто скопируй ссылку!");
-                }
+              }
             }
+          }
+        }
+
+        const fCvs = document.createElement('canvas');
+        fCvs.width = fCvs.height = actualSize;
+        fCvs.getContext('2d').putImageData(final, 0, 0);
+        mainCtx.drawImage(fCvs, centeringOffset, centeringOffset);
+        this.updateStatus("Done");
+      } catch (e) { console.error(e); this.updateStatus("Error"); }
+    },
+
+    startCamera() {
+      if(this.state.isScanning) return;
+      this.state.isScanning = true;
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+          this.els.video.srcObject = stream;
+          this.els.video.style.display = 'block';
+          this.els.video.play();
+          this.updateStatus("Scanning...");
+          AudioEngine.startScanAtmosphere();
+          this.scanLoop();
+        })
+        .catch(err => { alert("Camera Error: " + err.message); this.stopCamera(); });
+    },
+
+    stopCamera() {
+      this.state.isScanning = false;
+      AudioEngine.stopAll();
+      if(this.els.video.srcObject) this.els.video.srcObject.getTracks().forEach(t => t.stop());
+      this.els.video.style.display = 'none';
+      this.els.scanLine.style.display = 'none';
+    },
+
+    scanLoop() {
+      if (!this.state.isScanning) return;
+      if (this.els.video.readyState === this.els.video.HAVE_ENOUGH_DATA) {
+        const result = this.processFrame(this.els.video, this.els.video.videoWidth, this.els.video.videoHeight);
+        if (result) {
+          this.captureFrame(this.els.video, this.els.video.videoWidth, this.els.video.videoHeight);
+          this.stopCamera();
+          this.performRitual(result);
+          return;
+        }
+      }
+      requestAnimationFrame(() => this.scanLoop());
+    },
+
+    processFrame(source, w, h) {
+      const cvs = document.createElement('canvas');
+      cvs.width = cvs.height = 1024;
+      const ctx = cvs.getContext('2d');
+      const s = Math.min(w, h);
+      ctx.drawImage(source, (w-s)/2, (h-s)/2, s, s, 0, 0, 1024, 1024);
+      const d = ctx.getImageData(0, 0, 1024, 1024);
+      for (let i = 0; i < d.data.length; i += 4) {
+        const b = d.data[i+2];
+        d.data[i] = d.data[i+1] = d.data[i+2] = b;
+      }
+      return jsQR(d.data, 1024, 1024, { inversionAttempts: "attemptBoth" });
+    },
+
+    captureFrame(source, w, h) {
+      const s = Math.min(w, h);
+      this.els.ctx.drawImage(source, (w-s)/2, (h-s)/2, s, s, 0, 0, 1024, 1024);
+    },
+
+    performRitual(code) {
+      this.state.isScanning = true;
+      AudioEngine.playScan();
+      const line = this.els.scanLine;
+      line.style.display = 'block';
+      line.style.top = '0%';
+      void line.offsetHeight;
+      line.style.transition = 'top 2.5s linear';
+      line.style.top = '100%';
+      this.updateStatus("Analyzing...");
+
+      setTimeout(() => {
+        this.els.flash.style.opacity = '1';
+        AudioEngine.playResult(!!code);
+        setTimeout(() => {
+          this.els.flash.style.opacity = '0';
+          if (code) {
+            try { this.els.input.value = decodeURIComponent(escape(code.data)); } catch(e) { this.els.input.value = code.data; }
+            this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
+            this.els.ctx.fillRect(0, 0, 1024, 1024);
+            this.updateStatus("Decoded!");
+            this.state.frozen = true;
+            this.generate();
+          } else {
+            this.updateStatus("No Data");
+            this.clearCanvas();
+          }
+          this.state.isScanning = false;
+          line.style.display = 'none';
+        }, 150);
+      }, 2500);
+    },
+
+    handleFile(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const img = new Image();
+        img.onload = () => {
+          this.captureFrame(img, img.width, img.height);
+          const res = this.processFrame(img, img.width, img.height);
+          this.performRitual(res);
         };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    },
+
+    clearCanvas() { this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024); },
+    updateStatus(msg) { this.els.status.innerText = msg; },
+    
+    setLang(lang) {
+      this.state.lang = lang;
+      const i18n = {
+        m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
+        m_tech_text: { ua: "Синхронізація орнаменту.", en: "Ornament synchronization." }
+      };
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if(i18n[key]) el.textContent = i18n[key][lang];
+      });
+    },
+
+    save() {
+      const link = document.createElement('a');
+      link.download = 'qrnament.png';
+      link.href = this.els.canvas.toDataURL();
+      link.click();
+    },
+
+    async share() {
+      if (navigator.share) {
+        try { await navigator.share({ title: 'QRnament', url: window.location.href }); } catch (e) {}
+      } else { alert("Not supported"); }
+    }
+  };
 
         // --- AUDIO ENGINE ---
         const AudioEngine = {
