@@ -1,84 +1,106 @@
-const canvas = document.createElement('canvas');
-const ctx = canvas.getContext('2d');
-document.body.appendChild(canvas);
-
-const input = document.createElement('input');
-input.type = 'text';
-input.placeholder = 'Введите текст для генерации...';
-document.body.appendChild(input);
-
 /**
- * КРИТИЧЕСКАЯ СИНХРОНИЗАЦИЯ:
- * 1 пиксель орнамента = 1 модуль QR-кода.
+ * СИСТЕМА ГЕНЕРАЦИИ СИММЕТРИЧНОГО ОРНАМЕНТА (D8)
+ * Синхронизация: 1 пиксель орнамента = 1 модуль QR
  */
 
-function generateMandala(text) {
-    // Имитация получения данных QR (размер N x N)
-    // В реальном приложении здесь библиотека qrcode-generator
-    const qrSize = Math.max(21, Math.min(57, text.length + 21)); 
-    const moduleSize = 10; // Размер одного модуля в экранных пикселях
-    const dim = qrSize; 
+const setupUI = () => {
+    const container = document.createElement('div');
+    container.style.cssText = 'display:flex; flex-direction:column; align-items:center; gap:20px; padding:20px; font-family:sans-serif;';
     
-    canvas.width = canvas.height = dim * moduleSize;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Введите текст для генерации...';
+    input.style.cssText = 'width:300px; padding:10px; border-radius:5px; border:1px solid #ccc;';
     
-    // ФАЗА 1: ДИСКРЕТНАЯ ГЕНЕРАЦИЯ (Логика в памяти)
-    const grid = Array(dim).fill().map(() => Array(dim).fill(0));
+    const canvas = document.createElement('canvas');
+    canvas.style.imageRendering = 'pixelated'; // Критично для сохранения четкости модулей
+    
+    document.body.appendChild(container);
+    container.appendChild(input);
+    container.appendChild(canvas);
+    
+    return { input, canvas, ctx: canvas.getContext('2d') };
+};
+
+const { input, canvas, ctx } = setupUI();
+
+function generate(text) {
+    // 1. ОПРЕДЕЛЕНИЕ РАЗМЕРА (Синхронизация с QR)
+    // Версия 1 = 21x21, Версия 2 = 25x25 и т.д.
+    const qrGridDim = 21 + (Math.floor(text.length / 3) * 4); 
+    const moduleSize = 12; // Размер одного физического пикселя модуля
+    const totalSize = qrGridDim * moduleSize;
+    
+    canvas.width = canvas.height = totalSize;
+    const center = Math.floor(qrGridDim / 2);
+
+    // --- ФАЗА 1: ДИСКРЕТНАЯ ГЕНЕРАЦИЯ (ЛОГИКА) ---
+    // Работаем только с 1/8 частью (октант)
+    const masterOctant = [];
     const seed = text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    
-    // Заполнение мастер-октантa (1/8 часть)
-    const center = Math.floor(dim / 2);
+
     for (let y = 0; y <= center; y++) {
+        masterOctant[y] = [];
         for (let x = 0; x <= y; x++) {
-            // Псевдорандом на основе текста
-            const val = (Math.sin(seed + x * 0.5 + y * 0.8) > 0.3) ? 1 : 0;
-            grid[y][x] = val;
+            // Математическое "зерно" на основе текста
+            const hash = Math.abs(Math.sin(seed + x * 0.7 + y * 0.3) * 10000);
+            masterOctant[y][x] = {
+                active: hash % 2 > 0.8, // 0 или 1
+                color: `hsl(${(seed + hash) % 360}, 60%, 50%)`
+            };
         }
     }
 
-    // ФАЗА 2: РЕНДЕР (ТОЧКА НЕВОЗВРАТА)
-    // Отражение октанта для формирования полной сетки
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // --- ФАЗА 2: РЕНДЕР (ТОЧКА НЕВОЗВРАТА) ---
+    ctx.clearRect(0, 0, totalSize, totalSize);
     
+    // Отрисовка всех 8 отражений на основе мастер-октанта
     for (let y = 0; y <= center; y++) {
         for (let x = 0; x <= y; x++) {
-            if (grid[y][x]) {
-                drawSymmetricPixels(x, y, center, moduleSize);
+            const cell = masterOctant[y][x];
+            if (cell.active) {
+                ctx.fillStyle = cell.color;
+                drawD8(x, y, center, moduleSize);
             }
         }
     }
 
-    // ФАЗА 3: ПОСТ-ОБРАБОТКА (ТОЛЬКО ПИКСЕЛИ)
-    applyPixelSymmetry(dim, moduleSize);
+    // --- ФАЗА 3: УСИЛЕНИЕ СИММЕТРИИ (ТОЛЬКО ПИКСЕЛИ) ---
+    applyRasterFilters(totalSize);
 }
 
-function drawSymmetricPixels(x, y, center, size) {
-    const points = [
+// Функция отрисовки 8 зеркальных точек (строго по сетке модулей)
+function drawD8(x, y, center, size) {
+    const symPoints = [
         [center + x, center + y], [center - x, center + y],
         [center + x, center - y], [center - x, center - y],
         [center + y, center + x], [center - y, center + x],
         [center + y, center - x], [center - y, center - x]
     ];
-    
-    ctx.fillStyle = `hsl(${(x * 10) % 360}, 70%, 50%)`;
-    points.forEach(([px, py]) => {
+
+    symPoints.forEach(([px, py]) => {
         ctx.fillRect(px * size, py * size, size, size);
     });
 }
 
-function applyPixelSymmetry(dim, size) {
+// Работа с растром после уничтожения структуры блоков
+function applyRasterFilters(totalSize) {
     const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = tempCanvas.height = canvas.width;
+    tempCanvas.width = tempCanvas.height = totalSize;
     const tCtx = tempCanvas.getContext('2d');
-    
-    // Операция rotate(180) и наложение (Multiply/Difference)
-    tCtx.translate(canvas.width / 2, canvas.height / 2);
-    tCtx.rotate(Math.PI);
-    tCtx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
-    
+
+    // Копируем текущий кадр, вращаем на 90 градусов
+    tCtx.translate(totalSize / 2, totalSize / 2);
+    tCtx.rotate(Math.PI / 2);
+    tCtx.drawImage(canvas, -totalSize / 2, -totalSize / 2);
+
+    // Накладываем через разность (эффект интерференции)
     ctx.globalCompositeOperation = 'difference';
     ctx.drawImage(tempCanvas, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
 }
 
-input.addEventListener('input', (e) => generateMandala(e.target.value));
-generateMandala("START");
+input.addEventListener('input', (e) => generate(e.target.value || " "));
+
+// Инициализация
+generate("MANDALA_QR");
