@@ -2,66 +2,73 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Absolute Symmetry D8</title>
+    <title>QR-Mandala 21x21</title>
     <style>
-        body { background: #000; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        body { background: #000; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
         canvas { border: 1px solid #333; image-rendering: pixelated; width: 600px; height: 600px; }
     </style>
 </head>
 <body>
-    <canvas id="c" width="168" height="168"></canvas>
+    <canvas id="c" width="21" height="21"></canvas>
 
 <script>
     const canvas = document.getElementById('c');
     const ctx = canvas.getContext('2d');
-    const size = 168;
-    const half = size / 2;
+    const size = 21; // Размер QR-кода v1
+    const half = Math.ceil(size / 2); // 11 пикселей до центра
 
     const SPRITES = [
-        [0,24,60,126,126,60,24,0], [127,65,93,85,93,65,127], [85,62,99,42,99,62,85],
-        [42,119,34,73,34,119,42], [28,42,73,119,73,42,28], [119,85,119,0,119,85,119],
-        [63,31,15,7,3,1,0], [1,3,7,15,31,63,127]
+        [24,60,126,126,60,24,0], [127,65,93,85,93,65,127], 
+        [85,62,99,42,99,62,85], [119,85,119,0,119,85,119],
+        [62,73,93,127,93,73,62], [99,99,0,0,0,99,99]
     ];
 
     function render() {
+        // 1. Создаем матрицу октанта (1/8 часть от 21x21)
         const octant = Array.from({length: half}, () => new Uint8Array(half));
         
-        // 1. ЗАПОЛНЕНИЕ ОКТАНТА (Строго r >= c)
+        // Заполняем октант спрайтами (шаг 7 для стыковки блоков)
         for (let r = 0; r < half; r += 7) {
             for (let c = 0; c <= r; c += 7) {
                 const s = SPRITES[Math.floor(Math.random() * SPRITES.length)];
                 for (let pr = 0; pr < 7; pr++) {
                     for (let pc = 0; pc < 7; pc++) {
-                        if (r + pr < half && c + pc <= r + pr) {
-                            if ((s[pr] >> (6 - pc)) & 1) octant[r + pr][c + pc] = 1;
+                        let targetR = r + pr;
+                        let targetC = c + pc;
+                        if (targetR < half && targetC <= targetR) {
+                            if ((s[pr] >> (6 - pc)) & 1) octant[targetR][targetC] = 1;
                         }
                     }
                 }
             }
         }
 
-        // 2. БЕЗУПРЕЧНОЕ ОТРАЖЕНИЕ
+        // 2. Отрисовка с D8 симметрией на холст 21x21
         const img = ctx.createImageData(size, size);
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
-                // Вычисляем дистанцию от "шва" (центра)
-                // Если координата < half, зеркалим её.
-                let ay = y < half ? (half - 1 - y) : (y - half);
-                let ax = x < half ? (half - 1 - x) : (x - half);
+                // Отражение относительно центрального модуля (10-й индекс)
+                let ay = Math.abs(y - 10);
+                let ax = Math.abs(x - 10);
 
-                // Главная диагональ (D8)
-                let py = ay > ax ? ay : ax;
-                let px = ay > ax ? ax : ay;
+                // Транспонирование для диагональной симметрии
+                let py = Math.max(ay, ax);
+                let px = Math.min(ay, ax);
 
-                const val = octant[py][px] ? 255 : 0;
+                const isLit = octant[py][px];
                 const i = (y * size + x) * 4;
-                img.data[i] = img.data[i+1] = img.data[i+2] = val;
+                
+                // Рисуем (белый на черном)
+                const color = isLit ? 255 : 0;
+                img.data[i] = img.data[i+1] = img.data[i+2] = color;
                 img.data[i+3] = 255;
             }
         }
         ctx.putImageData(img, 0, 0);
     }
+
     render();
+    canvas.onclick = render;
 </script>
 </body>
 </html>
