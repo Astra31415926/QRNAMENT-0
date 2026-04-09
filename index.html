@@ -1,19 +1,20 @@
 /**
- * СИСТЕМА ГЕНЕРАЦИИ СИММЕТРИЧНОГО ОРНАМЕНТА (D8)
- * Синхронизация: 1 пиксель орнамента = 1 модуль QR
+ * ГЕНЕРАТОР "ЦИФРОВОЙ КРИСТАЛЛ" (QR-СИНХРОНИЗАЦИЯ)
  */
 
 const setupUI = () => {
+    document.body.style.backgroundColor = '#1a1a1a';
     const container = document.createElement('div');
-    container.style.cssText = 'display:flex; flex-direction:column; align-items:center; gap:20px; padding:20px; font-family:sans-serif;';
+    container.style.cssText = 'display:flex; flex-direction:column; align-items:center; gap:20px; padding:40px;';
     
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = 'Введите текст для генерации...';
-    input.style.cssText = 'width:300px; padding:10px; border-radius:5px; border:1px solid #ccc;';
+    input.placeholder = 'Введите текст...';
+    input.style.cssText = 'width:400px; padding:12px; background:#333; color:#fff; border:1px solid #555; outline:none;';
     
     const canvas = document.createElement('canvas');
-    canvas.style.imageRendering = 'pixelated'; // Критично для сохранения четкости модулей
+    canvas.style.boxShadow = '0 0 50px rgba(0,0,0,0.5)';
+    canvas.style.imageRendering = 'pixelated';
     
     document.body.appendChild(container);
     container.appendChild(input);
@@ -25,82 +26,72 @@ const setupUI = () => {
 const { input, canvas, ctx } = setupUI();
 
 function generate(text) {
-    // 1. ОПРЕДЕЛЕНИЕ РАЗМЕРА (Синхронизация с QR)
-    // Версия 1 = 21x21, Версия 2 = 25x25 и т.д.
-    const qrGridDim = 21 + (Math.floor(text.length / 3) * 4); 
-    const moduleSize = 12; // Размер одного физического пикселя модуля
+    // 1. СЕТКА (Связь с версией QR: 21, 25, 29...)
+    const qrGridDim = 21 + (Math.floor(text.length / 2) * 4);
+    const moduleSize = Math.floor(600 / qrGridDim); // Адаптивный размер модуля
     const totalSize = qrGridDim * moduleSize;
     
     canvas.width = canvas.height = totalSize;
     const center = Math.floor(qrGridDim / 2);
+    const seed = text.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
 
-    // --- ФАЗА 1: ДИСКРЕТНАЯ ГЕНЕРАЦИЯ (ЛОГИКА) ---
-    // Работаем только с 1/8 частью (октант)
-    const masterOctant = [];
-    const seed = text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-
+    // --- ФАЗА 1: ГЕНЕРАЦИЯ ДАННЫХ ---
+    const octant = [];
     for (let y = 0; y <= center; y++) {
-        masterOctant[y] = [];
+        octant[y] = [];
         for (let x = 0; x <= y; x++) {
-            // Математическое "зерно" на основе текста
-            const hash = Math.abs(Math.sin(seed + x * 0.7 + y * 0.3) * 10000);
-            masterOctant[y][x] = {
-                active: hash % 2 > 0.8, // 0 или 1
-                color: `hsl(${(seed + hash) % 360}, 60%, 50%)`
+            const noise = Math.abs(Math.sin(seed + x * 0.5 + y * 0.8) * 10000);
+            octant[y][x] = {
+                active: (noise % 10) > 4,
+                hue: (seed + noise) % 360
             };
         }
     }
 
-    // --- ФАЗА 2: РЕНДЕР (ТОЧКА НЕВОЗВРАТА) ---
-    ctx.clearRect(0, 0, totalSize, totalSize);
-    
-    // Отрисовка всех 8 отражений на основе мастер-октанта
+    // --- ФАЗА 2: РЕНДЕР (БАЗОВЫЙ СЛОЙ) ---
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, totalSize, totalSize);
+
     for (let y = 0; y <= center; y++) {
         for (let x = 0; x <= y; x++) {
-            const cell = masterOctant[y][x];
-            if (cell.active) {
-                ctx.fillStyle = cell.color;
+            if (octant[y][x].active) {
+                ctx.fillStyle = `hsl(${octant[y][x].hue}, 80%, 50%)`;
                 drawD8(x, y, center, moduleSize);
             }
         }
     }
 
-    // --- ФАЗА 3: УСИЛЕНИЕ СИММЕТРИИ (ТОЛЬКО ПИКСЕЛИ) ---
-    applyRasterFilters(totalSize);
+    // --- ФАЗА 3: ПИКСЕЛЬНОЕ УСИЛЕНИЕ (ТОЛЬКО РАСТР) ---
+    applyRasterSymmetry(totalSize);
 }
 
-// Функция отрисовки 8 зеркальных точек (строго по сетке модулей)
 function drawD8(x, y, center, size) {
-    const symPoints = [
-        [center + x, center + y], [center - x, center + y],
-        [center + x, center - y], [center - x, center - y],
-        [center + y, center + x], [center - y, center + x],
-        [center + y, center - x], [center - y, center - x]
+    const points = [
+        [center+x, center+y], [center-x, center+y], [center+x, center-y], [center-x, center-y],
+        [center+y, center+x], [center-y, center+x], [center+y, center-x], [center-y, center-x]
     ];
-
-    symPoints.forEach(([px, py]) => {
-        ctx.fillRect(px * size, py * size, size, size);
-    });
+    points.forEach(([px, py]) => ctx.fillRect(px * size, py * size, size, size));
 }
 
-// Работа с растром после уничтожения структуры блоков
-function applyRasterFilters(totalSize) {
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = tempCanvas.height = totalSize;
-    const tCtx = tempCanvas.getContext('2d');
+function applyRasterSymmetry(totalSize) {
+    const temp = document.createElement('canvas');
+    temp.width = temp.height = totalSize;
+    const tCtx = temp.getContext('2d');
 
-    // Копируем текущий кадр, вращаем на 90 градусов
+    // Делаем копию и поворачиваем на 90 градусов
     tCtx.translate(totalSize / 2, totalSize / 2);
     tCtx.rotate(Math.PI / 2);
     tCtx.drawImage(canvas, -totalSize / 2, -totalSize / 2);
 
-    // Накладываем через разность (эффект интерференции)
+    // Смешивание слоев (Difference создает неоновые контуры на стыках)
     ctx.globalCompositeOperation = 'difference';
-    ctx.drawImage(tempCanvas, 0, 0);
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(temp, 0, 0);
+
+    // Добавляем финальный проход для "глубины" (Screen/Lighten)
+    ctx.globalCompositeOperation = 'screen';
+    ctx.filter = 'contrast(150%) brightness(120%)';
+    ctx.drawImage(canvas, 0, 0);
 }
 
-input.addEventListener('input', (e) => generate(e.target.value || " "));
-
-// Инициализация
-generate("MANDALA_QR");
+input.addEventListener('input', (e) => generate(e.target.value || "CRYSTAL"));
+generate("MANDALA");
