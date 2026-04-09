@@ -1,97 +1,98 @@
-/**
- * ГЕНЕРАТОР "ЦИФРОВОЙ КРИСТАЛЛ" (QR-СИНХРОНИЗАЦИЯ)
- */
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>QR-Mandala: Raster Protocol</title>
+    <style>
+        body { background: #050505; color: #0f0; font-family: inset, monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        canvas { border: 1px solid #222; image-rendering: pixelated; width: 600px; height: 600px; box-shadow: 0 0 40px rgba(0,255,0,0.05); }
+        .controls { margin-bottom: 20px; display: flex; gap: 10px; }
+        input { background: #000; border: 1px solid #0f0; color: #0f0; padding: 10px; outline: none; }
+    </style>
+</head>
+<body>
 
-const setupUI = () => {
-    document.body.style.backgroundColor = '#1a1a1a';
-    const container = document.createElement('div');
-    container.style.cssText = 'display:flex; flex-direction:column; align-items:center; gap:20px; padding:40px;';
-    
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.placeholder = 'Введите текст...';
-    input.style.cssText = 'width:400px; padding:12px; background:#333; color:#fff; border:1px solid #555; outline:none;';
-    
-    const canvas = document.createElement('canvas');
-    canvas.style.boxShadow = '0 0 50px rgba(0,0,0,0.5)';
-    canvas.style.imageRendering = 'pixelated';
-    
-    document.body.appendChild(container);
-    container.appendChild(input);
-    container.appendChild(canvas);
-    
-    return { input, canvas, ctx: canvas.getContext('2d') };
-};
+    <div class="controls">
+        <input type="text" id="seed" value="RASTER_DESTRUCTION" placeholder="SEED...">
+    </div>
+    <canvas id="c" width="21" height="21"></canvas>
 
-const { input, canvas, ctx } = setupUI();
+<script>
+    const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+    const input = document.getElementById('seed');
+    const SIZE = 21, HALF = 11;
 
-function generate(text) {
-    // 1. СЕТКА (Связь с версией QR: 21, 25, 29...)
-    const qrGridDim = 21 + (Math.floor(text.length / 2) * 4);
-    const moduleSize = Math.floor(600 / qrGridDim); // Адаптивный размер модуля
-    const totalSize = qrGridDim * moduleSize;
-    
-    canvas.width = canvas.height = totalSize;
-    const center = Math.floor(qrGridDim / 2);
-    const seed = text.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
+    const SPRITES = [
+        [24,60,126,126,60,24,0], [127,65,93,85,93,65,127], [85,62,99,42,99,62,85],
+        [119,85,119,0,119,85,119], [62,73,93,127,93,73,62], [99,99,99,99,99,99,99]
+    ];
 
-    // --- ФАЗА 1: ГЕНЕРАЦИЯ ДАННЫХ ---
-    const octant = [];
-    for (let y = 0; y <= center; y++) {
-        octant[y] = [];
-        for (let x = 0; x <= y; x++) {
-            const noise = Math.abs(Math.sin(seed + x * 0.5 + y * 0.8) * 10000);
-            octant[y][x] = {
-                active: (noise % 10) > 4,
-                hue: (seed + noise) % 360
-            };
-        }
+    function getRnd(s) {
+        let h = 0; for(let i=0; i<s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+        return () => { h = Math.sin(h++) * 10000; return h - Math.floor(h); };
     }
 
-    // --- ФАЗА 2: РЕНДЕР (БАЗОВЫЙ СЛОЙ) ---
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, totalSize, totalSize);
-
-    for (let y = 0; y <= center; y++) {
-        for (let x = 0; x <= y; x++) {
-            if (octant[y][x].active) {
-                ctx.fillStyle = `hsl(${octant[y][x].hue}, 80%, 50%)`;
-                drawD8(x, y, center, moduleSize);
+    // --- ФАЗА 1: ДИСКРЕТНАЯ ГЕНЕРАЦИЯ (ОКТАНТ) ---
+    function generateOctant(rnd) {
+        const oct = Array.from({length: HALF}, () => new Uint8Array(HALF));
+        for (let r = 0; r < HALF; r += 7) {
+            for (let c = 0; c <= r; c += 7) {
+                const s = SPRITES[Math.floor(rnd() * SPRITES.length)];
+                for (let pr = 0; pr < 7; pr++) {
+                    for (let pc = 0; pc < 7; pc++) {
+                        if (r+pr < HALF && c+pc <= r+pr && (s[pr] >> (6-pc)) & 1) oct[r+pr][c+pc] = 1;
+                    }
+                }
             }
         }
+        return oct;
     }
 
-    // --- ФАЗА 3: ПИКСЕЛЬНОЕ УСИЛЕНИЕ (ТОЛЬКО РАСТР) ---
-    applyRasterSymmetry(totalSize);
-}
+    // --- ФАЗА 2: РЕНДЕР (ТОЧКА НЕВОЗВРАТА) ---
+    function renderToRaster(octant) {
+        const img = ctx.createImageData(SIZE, SIZE);
+        for (let y = 0; y < SIZE; y++) {
+            for (let x = 0; x < SIZE; x++) {
+                let ay = Math.abs(y-10), ax = Math.abs(x-10);
+                let py = Math.max(ay, ax), px = Math.min(ay, ax);
+                const i = (y * SIZE + x) * 4;
+                const val = octant[py][px] ? 255 : 0;
+                img.data[i] = 0; // R (Блоки - заполним позже)
+                img.data[i+1] = val; // G (Паттерн слой)
+                img.data[i+2] = 0; // B (QR слой)
+                img.data[i+3] = 255;
+            }
+        }
+        return img;
+    }
 
-function drawD8(x, y, center, size) {
-    const points = [
-        [center+x, center+y], [center-x, center+y], [center+x, center-y], [center-x, center-y],
-        [center+y, center+x], [center-y, center+x], [center+y, center-x], [center-y, center-x]
-    ];
-    points.forEach(([px, py]) => ctx.fillRect(px * size, py * size, size, size));
-}
+    // --- ФАЗА 3: УСИЛЕНИЕ (ТОЛЬКО ПИКСЕЛИ) ---
+    function enhance(imgData) {
+        const data = imgData.data;
+        // Эмуляция Multiply/Difference через проход по массиву байтов
+        for (let i = 0; i < data.length; i += 4) {
+            // Красный канал: Блочный слой (геометрия)
+            data[i] = (i / 4 % 3 === 0 || Math.floor(i / 84) % 3 === 0) ? 150 : 0;
+            
+            // Финальная композиция: Difference (B_layer - P_layer)
+            // Используем только данные пикселей
+            data[i+1] = Math.abs(data[i] - data[i+1]);
+            
+            // Синий канал: QR (заглушка для примера)
+            data[i+2] = (Math.random() > 0.8) ? 255 : 0; 
+        }
+    }
 
-function applyRasterSymmetry(totalSize) {
-    const temp = document.createElement('canvas');
-    temp.width = temp.height = totalSize;
-    const tCtx = temp.getContext('2d');
+    function run() {
+        const rnd = getRnd(input.value);
+        const oct = generateOctant(rnd);
+        const raster = renderToRaster(oct); // Переход в растр
+        enhance(raster); // Операции над пикселями
+        ctx.putImageData(raster, 0, 0);
+    }
 
-    // Делаем копию и поворачиваем на 90 градусов
-    tCtx.translate(totalSize / 2, totalSize / 2);
-    tCtx.rotate(Math.PI / 2);
-    tCtx.drawImage(canvas, -totalSize / 2, -totalSize / 2);
-
-    // Смешивание слоев (Difference создает неоновые контуры на стыках)
-    ctx.globalCompositeOperation = 'difference';
-    ctx.drawImage(temp, 0, 0);
-
-    // Добавляем финальный проход для "глубины" (Screen/Lighten)
-    ctx.globalCompositeOperation = 'screen';
-    ctx.filter = 'contrast(150%) brightness(120%)';
-    ctx.drawImage(canvas, 0, 0);
-}
-
-input.addEventListener('input', (e) => generate(e.target.value || "CRYSTAL"));
-generate("MANDALA");
+    input.oninput = run;
+    run();
+</script>
+</body>
+</html>
