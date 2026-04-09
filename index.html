@@ -2,90 +2,65 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel-Perfect Mandala D8</title>
+    <title>Absolute Symmetry D8</title>
     <style>
-        body { background: #000; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: #0f0; font-family: monospace; }
+        body { background: #000; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
         canvas { border: 1px solid #333; image-rendering: pixelated; width: 600px; height: 600px; }
-        input { background: #0a0a0a; border: 1px solid #0f0; color: #0f0; padding: 10px; width: 300px; margin-bottom: 20px; text-align: center; outline: none; }
     </style>
 </head>
 <body>
-
-    <input type="text" id="seedInput" value="PIXEL_LOGIC" placeholder="TYPE SEED...">
-    <canvas id="mainCanvas" width="168" height="168"></canvas>
+    <canvas id="c" width="168" height="168"></canvas>
 
 <script>
-    const canvas = document.getElementById('mainCanvas');
+    const canvas = document.getElementById('c');
     const ctx = canvas.getContext('2d');
-    const seedInput = document.getElementById('seedInput');
+    const size = 168;
+    const half = size / 2;
 
     const SPRITES = [
         [0,24,60,126,126,60,24,0], [127,65,93,85,93,65,127], [85,62,99,42,99,62,85],
         [42,119,34,73,34,119,42], [28,42,73,119,73,42,28], [119,85,119,0,119,85,119],
-        [62,73,93,127,93,73,62], [8,42,8,119,8,42,8], [99,99,0,0,0,99,99], [63,31,15,7,3,1,0]
+        [63,31,15,7,3,1,0], [1,3,7,15,31,63,127]
     ];
 
-    function seededRandom(s) {
-        let h = 0; for(let i=0; i<s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
-        return function() { h = Math.sin(h++) * 10000; return h - Math.floor(h); };
-    }
-
     function render() {
-        const rnd = seededRandom(seedInput.value);
-        const gridSize = 12; // Ячеек в октанте
-        const pPerCell = 7;   // Пикселей в ячейке
-        const octantSize = gridSize * pPerCell; // 84 пикселя
+        const octant = Array.from({length: half}, () => new Uint8Array(half));
         
-        // 1. СОЗДАЕМ МАССИВ ПИКСЕЛЕЙ ОКТАНТА (Треугольник)
-        const pixelOctant = Array.from({length: octantSize}, () => new Uint8Array(octantSize));
-
-        for (let r = 0; r < gridSize; r++) {
-            for (let c = 0; c <= r; c++) {
-                const pattern = SPRITES[Math.floor(rnd() * SPRITES.length)];
-                // Рисуем паттерн в массив пикселей
+        // 1. ЗАПОЛНЕНИЕ ОКТАНТА (Строго r >= c)
+        for (let r = 0; r < half; r += 7) {
+            for (let c = 0; c <= r; c += 7) {
+                const s = SPRITES[Math.floor(Math.random() * SPRITES.length)];
                 for (let pr = 0; pr < 7; pr++) {
                     for (let pc = 0; pc < 7; pc++) {
-                        if ((pattern[pr] >> (6 - pc)) & 1) {
-                            pixelOctant[r * 7 + pr][c * 7 + pc] = 1;
+                        if (r + pr < half && c + pc <= r + pr) {
+                            if ((s[pr] >> (6 - pc)) & 1) octant[r + pr][c + pc] = 1;
                         }
                     }
                 }
             }
         }
 
-        // 2. РЕНДЕРИМ ВЕСЬ ХОЛСТ ПОПИКСЕЛЬНО (8-кратное отражение)
-        const fullSize = octantSize * 2;
-        const imgData = ctx.createImageData(fullSize, fullSize);
+        // 2. БЕЗУПРЕЧНОЕ ОТРАЖЕНИЕ
+        const img = ctx.createImageData(size, size);
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                // Вычисляем дистанцию от "шва" (центра)
+                // Если координата < half, зеркалим её.
+                let ay = y < half ? (half - 1 - y) : (y - half);
+                let ax = x < half ? (half - 1 - x) : (x - half);
 
-        for (let y = 0; y < fullSize; y++) {
-            for (let x = 0; x < fullSize; x++) {
-                // Координаты относительно центра
-                let relX = x - octantSize;
-                let relY = y - octantSize;
+                // Главная диагональ (D8)
+                let py = ay > ax ? ay : ax;
+                let px = ay > ax ? ax : ay;
 
-                // Переводим в положительный сектор
-                let ax = relX < 0 ? -relX - 1 : relX;
-                let ay = relY < 0 ? -relY - 1 : relY;
-
-                // Отражаем по диагонали (транспонируем координаты пикселя)
-                let px = ax > ay ? ay : ax;
-                let py = ax > ay ? ax : ay;
-
-                // Если в октанте пиксель закрашен — рисуем белый, иначе черный
-                const isLit = pixelOctant[py][px];
-                const idx = (y * fullSize + x) * 4;
-                const val = isLit ? 255 : 0;
-
-                imgData.data[idx] = val;     // R
-                imgData.data[idx + 1] = val; // G
-                imgData.data[idx + 2] = val; // B
-                imgData.data[idx + 3] = 255; // A
+                const val = octant[py][px] ? 255 : 0;
+                const i = (y * size + x) * 4;
+                img.data[i] = img.data[i+1] = img.data[i+2] = val;
+                img.data[i+3] = 255;
             }
         }
-        ctx.putImageData(imgData, 0, 0);
+        ctx.putImageData(img, 0, 0);
     }
-
-    seedInput.addEventListener('input', render);
     render();
 </script>
 </body>
