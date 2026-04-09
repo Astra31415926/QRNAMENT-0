@@ -1,46 +1,84 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>QR-Mandala Typing</title>
-    <style>
-        body { background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: monospace; }
-        canvas { border: 1px solid #333; image-rendering: pixelated; width: 600px; height: 600px; margin-top: 20px; }
-        input { background: #000; border: 1px solid #0f0; color: #0f0; padding: 10px; width: 300px; text-align: center; outline: none; }
-    </style>
-</head>
-<body>
-    <input type="text" id="si" value="ABC" placeholder="ПЕЧАТАЙ ТУТ...">
-    <canvas id="c" width="21" height="21"></canvas>
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+document.body.appendChild(canvas);
 
-<script>
-    const canvas = document.getElementById('c'), ctx = canvas.getContext('2d'), input = document.getElementById('si');
-    const SPRITES = [[24,60,126,126,60,24,0],[127,65,93,85,93,65,127],[85,62,99,42,99,62,85],[119,85,119,0,119,85,119],[62,73,93,127,93,73,62],[99,99,0,0,0,99,99]];
+const input = document.createElement('input');
+input.type = 'text';
+input.placeholder = 'Введите текст для генерации...';
+document.body.appendChild(input);
 
-    function render() {
-        let h = 0; String(input.value).split('').forEach(c => h = Math.imul(31, h) + c.charCodeAt(0) | 0);
-        const rnd = () => { h = Math.sin(h++) * 10000; return h - Math.floor(h); };
-        
-        const oct = Array.from({length: 11}, () => new Uint8Array(11));
-        for (let r = 0; r < 11; r += 7) for (let c = 0; c <= r; c += 7) {
-            const s = SPRITES[Math.floor(rnd() * SPRITES.length)];
-            for (let pr = 0; pr < 7; pr++) for (let pc = 0; pc < 7; pc++) {
-                if (r+pr < 11 && c+pc <= r+pr && (s[pr] >> (6-pc)) & 1) oct[r+pr][c+pc] = 1;
-            }
+/**
+ * КРИТИЧЕСКАЯ СИНХРОНИЗАЦИЯ:
+ * 1 пиксель орнамента = 1 модуль QR-кода.
+ */
+
+function generateMandala(text) {
+    // Имитация получения данных QR (размер N x N)
+    // В реальном приложении здесь библиотека qrcode-generator
+    const qrSize = Math.max(21, Math.min(57, text.length + 21)); 
+    const moduleSize = 10; // Размер одного модуля в экранных пикселях
+    const dim = qrSize; 
+    
+    canvas.width = canvas.height = dim * moduleSize;
+    
+    // ФАЗА 1: ДИСКРЕТНАЯ ГЕНЕРАЦИЯ (Логика в памяти)
+    const grid = Array(dim).fill().map(() => Array(dim).fill(0));
+    const seed = text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    
+    // Заполнение мастер-октантa (1/8 часть)
+    const center = Math.floor(dim / 2);
+    for (let y = 0; y <= center; y++) {
+        for (let x = 0; x <= y; x++) {
+            // Псевдорандом на основе текста
+            const val = (Math.sin(seed + x * 0.5 + y * 0.8) > 0.3) ? 1 : 0;
+            grid[y][x] = val;
         }
-
-        const img = ctx.createImageData(21, 21);
-        for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) {
-            let ay = Math.abs(y-10), ax = Math.abs(x-10);
-            let py = Math.max(ay, ax), px = Math.min(ay, ax);
-            const v = oct[py][px] ? 255 : 0, i = (y*21 + x)*4;
-            img.data[i] = img.data[i+1] = img.data[i+2] = v; img.data[i+3] = 255;
-        }
-        ctx.putImageData(img, 0, 0);
     }
 
-    input.oninput = render;
-    render();
-</script>
-</body>
-</html>
+    // ФАЗА 2: РЕНДЕР (ТОЧКА НЕВОЗВРАТА)
+    // Отражение октанта для формирования полной сетки
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    for (let y = 0; y <= center; y++) {
+        for (let x = 0; x <= y; x++) {
+            if (grid[y][x]) {
+                drawSymmetricPixels(x, y, center, moduleSize);
+            }
+        }
+    }
+
+    // ФАЗА 3: ПОСТ-ОБРАБОТКА (ТОЛЬКО ПИКСЕЛИ)
+    applyPixelSymmetry(dim, moduleSize);
+}
+
+function drawSymmetricPixels(x, y, center, size) {
+    const points = [
+        [center + x, center + y], [center - x, center + y],
+        [center + x, center - y], [center - x, center - y],
+        [center + y, center + x], [center - y, center + x],
+        [center + y, center - x], [center - y, center - x]
+    ];
+    
+    ctx.fillStyle = `hsl(${(x * 10) % 360}, 70%, 50%)`;
+    points.forEach(([px, py]) => {
+        ctx.fillRect(px * size, py * size, size, size);
+    });
+}
+
+function applyPixelSymmetry(dim, size) {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = tempCanvas.height = canvas.width;
+    const tCtx = tempCanvas.getContext('2d');
+    
+    // Операция rotate(180) и наложение (Multiply/Difference)
+    tCtx.translate(canvas.width / 2, canvas.height / 2);
+    tCtx.rotate(Math.PI);
+    tCtx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    
+    ctx.globalCompositeOperation = 'difference';
+    ctx.drawImage(tempCanvas, 0, 0);
+}
+
+input.addEventListener('input', (e) => generateMandala(e.target.value));
+generateMandala("START");
