@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament v4.1 // Block Logic Fix</title>
+    <title>QRnament v3.3 // Correct Sync</title>
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -44,11 +44,11 @@
                 <h2 class="text-xl font-black mb-2 flex items-center gap-2">
                     <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
                 </h2>
-                <p class="text-neonGreen opacity-70">v4.1 // Block Logic</p>
+                <p class="text-neonGreen opacity-70">v3.3 // Pixel Perfect Sync</p>
             </div>
             <div class="border-t border-zinc-800 pt-4">
                 <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_tech">⚙️ Технологія</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="m_tech_text">Алгоритм оперує блоками 7x7. Трансформації симетрії застосовуються до матриці блоку перед рендерингом.</p>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="m_tech_text">Орнамент генерується строго за розміром QR-матриці (nCount). Використовується алгоритм 8-кратної симетрії та радіальний градієнт яскравості.</p>
             </div>
         </div>
     </div>
@@ -78,7 +78,6 @@
 
     <div class="flex flex-col gap-3">
         <button onclick="App.save()" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Save PNG</button>
-        
         <div class="grid grid-cols-2 gap-3">
             <button onclick="App.startCamera()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Cam Scan</button>
             <button onclick="document.getElementById('file-input').click()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">File Scan</button>
@@ -89,163 +88,118 @@
     <p id="status" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Ready</p>
 
     <script>
-        // --- 1. CONSTANTS & PATTERNS ---
+        // --- 1. CONSTANTS & PATTERNS (Directly from Replit Specs) ---
         const CELL = 7;
         const PAL_BLOCKS = [80, 120, 180];
         const PAL_PATTERNS = [180, 200, 160];
-        const FILL_KEYS = ['p1', 'p9', 'p14', 'p17', 'p18', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'n9'];
+        const FILL_KEYS = ['p1', 'p9', 'p14', 'p17', 'p18'];
 
-        // Pattern Library (Flat Arrays 49 length)
+        // Pattern Library (Binary Arrays 0/1)
         const PATS = {
             'p1':  [0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 1,1,0,0,0,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0],
             'p9':  [1,1,1,1,1,1,1, 1,0,0,0,0,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,1,1,1,0,1, 1,0,0,0,0,0,1, 1,1,1,1,1,1,1],
             'p14': [1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1, 0,1,0,1,0,1,0, 1,0,1,0,1,0,1],
             'p17': [1,1,0,1,0,1,1, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 0,0,0,0,0,0,0, 1,1,0,1,0,1,1, 1,1,0,1,0,1,1],
             'p18': [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 1,1,1,1,1,1,1, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0],
-            's':   [1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1],
-            'n1': [0,0,0,0,0,0,0, 0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,1,1,1,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0, 0,0,0,0,0,0,0], 
-            'n2': [0,0,0,0,0,0,0, 0,1,1,1,1,1,0, 0,1,0,0,0,1,0, 0,1,0,0,0,1,0, 0,1,0,0,0,1,0, 0,1,1,1,1,1,0, 0,0,0,0,0,0,0], 
-            'n3': [0,0,0,0,0,0,0, 0,0,0,1,0,0,0, 0,0,0,1,0,0,0, 0,1,1,1,1,1,0, 0,0,0,1,0,0,0, 0,0,0,1,0,0,0, 0,0,0,0,0,0,0], 
-            'n4': [0,0,0,0,0,0,0, 0,1,0,0,0,1,0, 0,0,1,0,1,0,0, 0,0,0,1,0,0,0, 0,0,1,0,1,0,0, 0,1,0,0,0,1,0, 0,0,0,0,0,0,0], 
-            'n5': [0,0,0,0,0,0,0, 0,1,1,1,1,1,0, 0,0,0,0,0,1,0, 0,1,1,1,1,1,0, 0,1,0,0,0,0,0, 0,1,1,1,1,1,0, 0,0,0,0,0,0,0], 
-            'n6': [0,1,1,1,1,1,0, 0,1,0,0,0,1,0, 0,1,1,1,1,1,0, 0,1,0,0,0,1,0, 0,1,1,1,1,1,0, 0,0,0,0,0,0,0, 0,0,0,0,0,0,0], 
-            'n7': [0,0,0,0,0,0,0, 0,1,1,1,1,1,0, 0,0,0,1,0,0,0, 0,0,0,1,0,0,0, 0,0,0,1,0,0,0, 0,0,0,1,0,0,0, 0,0,0,0,0,0,0], 
-            'n8': [0,1,0,1,0,1,0, 0,1,0,1,0,1,0, 0,1,0,1,0,1,0, 0,1,0,1,0,1,0, 0,1,0,1,0,1,0, 0,1,0,1,0,1,0, 0,1,0,1,0,1,0], 
-            'n9': [1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 0,0,0,0,0,0,0, 1,1,1,1,1,1,1]
+            's':   [1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,1,1,1] // Solid
         };
 
-        // --- 2. MATRIX UTILS (Block Operations) ---
-        const Matrix = {
-            // Transpose a 7x7 flat array
-            transpose(arr) {
-                let n = [];
-                for(let r=0; r<7; r++) for(let c=0; c<7; c++) n.push(arr[c*7+r]);
-                return n;
-            },
-            // Flip Vertical
-            flipud(arr) {
-                let n = [];
-                for(let r=6; r>=0; r--) for(let c=0; c<7; c++) n.push(arr[r*7+c]);
-                return n;
-            },
-            // Flip Horizontal
-            fliplr(arr) {
-                let n = [];
-                for(let r=0; r<7; r++) for(let c=6; c>=0; c--) n.push(arr[r*7+c]);
-                return n;
-            }
-        };
-
-        // --- 3. ORNAMENT ENGINE ---
-        const OrnamentEngine = {
+        // --- 2. CORE ORNAMENT FUNCTION (Restored Logic) ---
+        function drawSnowflake(ctx, nCount, pxSize, usePats, pal, smart) {
+            // Dynamic Grid Calculation
+            // We add +5 buffer cells around
+            let gridDim = Math.floor(nCount / CELL) + 5;
+            if (gridDim % 2 === 0) gridDim++; // Ensure odd for center
             
-            // Generate the octant data structure (Logic Map)
-            generateOctantMap(quad, usePats, smart) {
-                let octant = [];
-                for (let r = 0; r < quad; r++) {
-                    octant[r] = [];
-                    for (let c = 0; c <= r; c++) {
-                        // Determine Pattern
-                        let patKey;
-                        
-                        // Stage 1: Basic Fill
-                        if (usePats) {
-                            // Random pattern from library
-                            let allKeys = Object.keys(PATS);
-                            patKey = allKeys[Math.floor(Math.random() * allKeys.length)];
-                        } else {
-                            // Solid block
-                            patKey = 's';
-                        }
+            const center = Math.floor(gridDim / 2);
+            const quad = center + 1;
+            const imgSize = nCount * pxSize; // Total canvas size in pixels
 
-                        // Stage 3: Smart Fill Override
-                        // "If solid block found, replace with symmetric filler"
-                        if (smart && patKey === 's') {
-                            patKey = FILL_KEYS[Math.floor(Math.random() * FILL_KEYS.length)];
-                        }
-
-                        // Determine Color
-                        // Logic: If smart fill replaced a block, invert brightness?
-                        // Or just use standard palettes.
-                        // For simplicity and visual consistency, we stick to palettes, but Smart Fill guarantees structure.
-                        let color;
-                        if (smart && !usePats) {
-                             // If we did smart fill on a block layer (Green A)
-                             // Let's make them slightly brighter/different to stand out in diff
-                             color = PAL_PATTERNS[Math.floor(Math.random() * PAL_PATTERNS.length)];
-                        } else {
-                             color = usePats ? PAL_PATTERNS[Math.floor(Math.random() * PAL_PATTERNS.length)] 
-                                             : PAL_BLOCKS[Math.floor(Math.random() * PAL_BLOCKS.length)];
-                        }
-
-                        octant[r][c] = { patKey, color };
+            // 1. Generate Octant Data
+            // Stores { pat: array, color: number }
+            let octant = [];
+            for (let r = 0; r < quad; r++) {
+                octant[r] = [];
+                for (let c = 0; c <= r; c++) {
+                    let color = pal[Math.floor(Math.random() * pal.length)];
+                    let pat = usePats ? 
+                        PATS[Object.keys(PATS)[Math.floor(Math.random() * 5)]] : // Use first 5 for patterns
+                        PATS['s']; // Solid block
+                    
+                    // Smart Fill Logic (Only applies if NOT usePats initially, then overrides)
+                    if (smart && !usePats) {
+                         // Replace solid block with symmetric filler
+                        pat = PATS[FILL_KEYS[Math.floor(Math.random() * FILL_KEYS.length)]];
+                        // Invert brightness
+                        color = color > 128 ? 20 : 230;
                     }
+                    
+                    octant[r][c] = { pat, color };
                 }
-                return octant;
-            },
+            }
 
-            // Render the map to a canvas
-            render(ctx, nCount, pxSize, octantMap) {
-                let gridDim = Math.floor(nCount / CELL) + 5;
-                if (gridDim % 2 === 0) gridDim++;
-                
-                const center = Math.floor(gridDim / 2);
-                const imgSize = nCount * pxSize;
-                const offset = (imgSize - gridDim * CELL * pxSize) / 2;
+            // 2. Render to Context
+            // Calculate offset to center the grid on the canvas
+            const offset = (imgSize - gridDim * CELL * pxSize) / 2;
 
-                for (let rC = 0; rC < gridDim; rC++) {
-                    for (let cC = 0; cC < gridDim; cC++) {
-                        let relC = cC - center;
-                        let relR = rC - center;
+            for (let rC = 0; rC < gridDim; rC++) {
+                for (let cC = 0; cC < gridDim; cC++) {
+                    // Relative coords from center
+                    let relC = cC - center;
+                    let relR = rC - center;
+                    
+                    // Map to Octant Source
+                    let absC = Math.abs(relC);
+                    let absR = Math.abs(relR);
+                    let sR = Math.max(absR, absC); // Radial index
+                    let sC = Math.min(absR, absC); // Angular index
+                    
+                    let data = octant[sR][sC];
+
+                    // Draw 7x7 Cell
+                    for (let i = 0; i < 49; i++) {
+                        let pr = Math.floor(i / 7); // Pattern row 0..6
+                        let pc = i % 7;             // Pattern col 0..6
                         
-                        let absC = Math.abs(relC);
-                        let absR = Math.abs(relR);
-                        let sR = Math.max(absR, absC);
-                        let sC = Math.min(absR, absC);
-                        
-                        let data = octantMap[sR][sC];
-                        
-                        // 1. Retrieve RAW Pattern
-                        let rawPat = PATS[data.patKey];
+                        // Apply Symmetry Transforms to local coords
+                        let tr = pr;
+                        let tc = pc;
 
-                        // 2. TRANSFORM PATTERN (Crucial Fix)
-                        // We treat the block as a matrix and apply operations BEFORE drawing.
+                        // 1. Transpose (if we are in swapped octant)
+                        if (absR < absC) [tr, tc] = [tc, tr]; 
                         
-                        // "if abs_r < abs_c: pattern = pattern.T"
-                        if (absR < absC) rawPat = Matrix.transpose(rawPat);
+                        // 2. Vertical Flip (if in top half)
+                        if (relR < 0) tr = 6 - tr;
                         
-                        // "if rel_r < 0: flipud"
-                        if (relR < 0) rawPat = Matrix.flipud(rawPat);
-                        
-                        // "if rel_c < 0: fliplr"
-                        if (relC < 0) rawPat = Matrix.fliplr(rawPat);
+                        // 3. Horizontal Flip (if in left half)
+                        if (relC < 0) tc = 6 - tc;
 
-                        // 3. Draw Transformed Pattern
-                        for (let i = 0; i < 49; i++) {
-                            if (rawPat[i] === 1) {
-                                let pr = Math.floor(i / 7);
-                                let pc = i % 7;
+                        // Check pattern bit
+                        if (data.pat[tr * 7 + tc] === 1) {
+                            // Calculate Pixel Position
+                            let x = offset + cC * CELL * pxSize + pc * pxSize;
+                            let y = offset + rC * CELL * pxSize + pr * pxSize;
 
-                                let x = offset + cC * CELL * pxSize + pc * pxSize;
-                                let y = offset + rC * CELL * pxSize + pr * pxSize;
-
-                                // Gradient Logic
-                                let dx = (x - imgSize/2) / (imgSize/2);
-                                let dy = (y - imgSize/2) / (imgSize/2);
-                                let d = Math.sqrt(dx*dx + dy*dy);
-                                let factor = 0.6 + 0.4 * d;
-                                let fCol = Math.floor(data.color * factor);
-
-                                ctx.fillStyle = `rgb(${fCol},${fCol},${fCol})`;
-                                ctx.fillRect(x, y, pxSize, pxSize);
-                            }
+                            // Tonal Stretch (Radial Gradient)
+                            // Distance from center of canvas
+                            let dx = (x - imgSize/2) / (imgSize/2);
+                            let dy = (y - imgSize/2) / (imgSize/2);
+                            let d = Math.sqrt(dx*dx + dy*dy); // 0.0 .. 1.41
+                            
+                            // Factor: 0.6 (center) -> 1.0 (corner)
+                            let factor = 0.6 + 0.4 * d;
+                            let fCol = Math.floor(data.color * factor);
+                            
+                            // Draw pixel
+                            ctx.fillStyle = `rgb(${fCol},${fCol},${fCol})`;
+                            ctx.fillRect(x, y, pxSize, pxSize);
                         }
                     }
                 }
             }
-        };
+        }
 
-        // --- 4. APP MODULE ---
+        // --- 3. APP MODULE ---
         const App = {
             state: { lang: 'ua', frozen: false, isScanning: false },
             els: {},
@@ -268,6 +222,7 @@
                     this.generate();
                 });
                 this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
+                document.body.addEventListener('click', () => AudioEngine.init(), { once: true });
                 
                 this.clearCanvas();
                 this.setLang('ua');
@@ -277,6 +232,7 @@
                 this.els.input.value = "";
                 this.clearCanvas();
                 this.updateStatus("Cleared");
+                AudioEngine.playClick();
             },
 
             toggleMenu() { this.els.menu.classList.toggle('open'); },
@@ -293,98 +249,90 @@
                     
                     const moduleCount = qr.getModuleCount();
                     const quietZone = 4;
-                    const nCount = moduleCount + quietZone * 2;
+                    const nCount = moduleCount + quietZone * 2; // Total Modules
+                    
+                    // Calculate Pixel Size to fit 1024px canvas
                     const pxSize = Math.floor(1024 / nCount); 
-                    const actualSize = nCount * pxSize;
-
-                    // Calc Grid
-                    let gridDim = Math.floor(nCount / CELL) + 5;
-                    if (gridDim % 2 === 0) gridDim++;
-                    const center = Math.floor(gridDim / 2);
-                    const quad = center + 1;
+                    const actualSize = nCount * pxSize; // Might be slightly less than 1024
 
                     this.updateStatus(`Rendering ${nCount}x${nCount}`);
 
-                    // --- RED CHANNEL ---
-                    // Generate Map: Blocks, No Smart Fill
-                    const mapRed = OrnamentEngine.generateOctantMap(quad, false, false);
-                    
+                    // --- STEP 1: RED CHANNEL ---
                     const rCvs = document.createElement('canvas');
                     rCvs.width = rCvs.height = actualSize;
-                    OrnamentEngine.render(rCvs.getContext('2d'), nCount, pxSize, mapRed);
+                    const rCtx = rCvs.getContext('2d');
+                    // Draw Blocks (Use Patterns = False, Smart = False)
+                    drawSnowflake(rCtx, nCount, pxSize, false, PAL_BLOCKS, false);
 
-                    // --- GREEN CHANNEL (Synced Layers) ---
-                    // We need a SHARED geometry map for the difference to work correctly!
-                    // 1. Create base geometry map (Where are the blocks?)
-                    // Let's generate a "Smart" map first (This has Solids replaced by Patterns)
-                    const mapGreenA = OrnamentEngine.generateOctantMap(quad, false, true); 
-                    
-                    // 2. Create second layer map based on the SAME geometry but different content?
-                    // Or different logic?
-                    // Prompt says: Layer A (Smart Blocks) - Layer B (Patterns).
-                    // If we use the SAME map for both, the difference is purely texture.
-                    // Let's clone mapGreenA but randomize patterns for Layer B? 
-                    // Or just use mapGreenA for Layer A, and generate a NEW random map for Layer B?
-                    // The prompt says "Difference" implies two different images.
-                    // Let's generate two distinct maps to see the effect.
-                    
-                    const mapGreenB = OrnamentEngine.generateOctantMap(quad, true, true);
+                    // --- STEP 2: GREEN CHANNEL (Difference) ---
+                    const gCvs = document.createElement('canvas');
+                    gCvs.width = gCvs.height = actualSize;
+                    const gCtx = gCvs.getContext('2d');
 
+                    // Layer A: Smart Blocks
                     const t1 = document.createElement('canvas');
                     t1.width = t1.height = actualSize;
-                    OrnamentEngine.render(t1.getContext('2d'), nCount, pxSize, mapGreenA);
-
+                    drawSnowflake(t1.getContext('2d'), nCount, pxSize, false, PAL_BLOCKS, true);
+                    
+                    // Layer B: Patterns
                     const t2 = document.createElement('canvas');
                     t2.width = t2.height = actualSize;
-                    OrnamentEngine.render(t2.getContext('2d'), nCount, pxSize, mapGreenB);
+                    drawSnowflake(t2.getContext('2d'), nCount, pxSize, true, PAL_PATTERNS, true);
 
-                    // Diff Operation
+                    // Difference Operation
                     let d1 = t1.getContext('2d').getImageData(0,0,actualSize,actualSize);
                     let d2 = t2.getContext('2d').getImageData(0,0,actualSize,actualSize);
                     for(let i=0; i<d1.data.length; i+=4) {
                         let diff = Math.abs(d1.data[i] - d2.data[i]);
+                        // Formula: 255 - diff
                         let val = 255 - diff;
                         d1.data[i] = d1.data[i+1] = d1.data[i+2] = val;
                     }
-                    
-                    const gCvs = document.createElement('canvas');
-                    gCvs.width = gCvs.height = actualSize;
-                    gCvs.getContext('2d').putImageData(d1, 0, 0);
+                    gCtx.putImageData(d1, 0, 0);
 
-                    // --- COMPOSITE ---
+                    // --- STEP 3: COMPOSITE ---
                     const mainCtx = this.els.ctx;
                     mainCtx.fillStyle = "#000";
                     mainCtx.fillRect(0, 0, 1024, 1024);
 
+                    // Center the result if it's smaller than 1024
                     const centeringOffset = (1024 - actualSize) / 2;
 
-                    let imgR = rCvs.getContext('2d').getImageData(0,0,actualSize,actualSize);
-                    let imgG = gCvs.getContext('2d').getImageData(0,0,actualSize,actualSize);
+                    // Get Data
+                    let imgR = rCtx.getImageData(0,0,actualSize,actualSize);
+                    let imgG = gCtx.getImageData(0,0,actualSize,actualSize);
                     let final = mainCtx.createImageData(actualSize, actualSize);
 
                     for(let i=0; i<final.data.length; i+=4) {
                         final.data[i] = imgR.data[i];     // RED
                         final.data[i+1] = imgG.data[i+1]; // GREEN
-                        final.data[i+2] = 0;              // BLUE
+                        final.data[i+2] = 0;              // BLUE (Will fill QR)
                         final.data[i+3] = 255;
                     }
 
-                    // QR Injection (Blue Channel)
+                    // --- STEP 4: INSERT QR CODE (Blue Channel) ---
+                    // We iterate over QR modules and set Blue Channel to 200
                     for (let r = 0; r < moduleCount; r++) {
                         for (let c = 0; c < moduleCount; c++) {
                             if (qr.isDark(r, c)) {
+                                // Map QR module to pixel region
                                 let startPy = (r + quietZone) * pxSize;
                                 let startPx = (c + quietZone) * pxSize;
+                                
+                                // Fill square in ImageData
+                                // This is faster than fillRect in loop
                                 for(let py=0; py<pxSize; py++) {
                                     for(let px=0; px<pxSize; px++) {
                                         let idx = ((startPy+py)*actualSize + (startPx+px))*4;
-                                        final.data[idx+2] = 180; // Blue
+                                        final.data[idx+2] = 180; // Blue brightness
                                     }
                                 }
                             }
                         }
                     }
 
+                    // Draw to Main Canvas
+                    // Create temp canvas for final data to draw it centered
                     const fCvs = document.createElement('canvas');
                     fCvs.width = fCvs.height = actualSize;
                     fCvs.getContext('2d').putImageData(final, 0, 0);
@@ -398,7 +346,7 @@
                 }
             },
 
-            // --- SCANNER LOGIC (Standard) ---
+            // --- SCANNER LOGIC (Unchanged) ---
             startCamera() {
                 if(this.state.isScanning) return;
                 this.state.isScanning = true;
@@ -409,6 +357,7 @@
                         this.els.video.style.display = 'block';
                         this.els.video.play();
                         this.updateStatus("Scanning...");
+                        AudioEngine.startScanAtmosphere();
                         this.scanLoop();
                     })
                     .catch(err => { alert("Camera Error: " + err.message); this.stopCamera(); });
@@ -416,6 +365,7 @@
 
             stopCamera() {
                 this.state.isScanning = false;
+                AudioEngine.stopAll();
                 if(this.els.video.srcObject) this.els.video.srcObject.getTracks().forEach(t => t.stop());
                 this.els.video.style.display = 'none';
                 this.els.scanLine.style.display = 'none';
@@ -440,22 +390,33 @@
                 const canvas = document.createElement('canvas');
                 canvas.width = 1024; canvas.height = 1024;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(source, 0, 0, 1024, 1024);
+                const aspect = w / h;
+                let sx = 0, sy = 0, sw = w, sh = h;
+                if (aspect > 1) { sw = h; sx = (w - sw) / 2; }
+                else { sh = w; sy = (h - sh) / 2; }
+                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
                 const imageData = ctx.getImageData(0, 0, 1024, 1024);
                 const data = imageData.data;
                 for (let i = 0; i < data.length; i += 4) {
-                    const b = data[i+2]; // Look at Blue channel
+                    const b = data[i+2];
                     data[i] = b; data[i+1] = b; data[i+2] = b;
                 }
                 return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
             },
 
             captureFrame(source, w, h) {
-                this.els.ctx.drawImage(source, 0, 0, 1024, 1024);
+                const ctx = this.els.ctx;
+                const aspect = w / h;
+                let sx = 0, sy = 0, sw = w, sh = h;
+                if (aspect > 1) { sw = h; sx = (w - sw) / 2; } 
+                else { sh = w; sy = (h - sh) / 2; }
+                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
             },
 
             performRitual(code) {
                 this.state.isScanning = true;
+                AudioEngine.playScan();
+                
                 const line = this.els.scanLine;
                 line.style.display = 'block';
                 line.style.animation = 'pulse 1.5s infinite';
@@ -468,6 +429,7 @@
 
                 setTimeout(() => {
                     this.els.flash.style.opacity = '1';
+                    AudioEngine.playResult(!!code);
                     setTimeout(() => {
                         this.els.flash.style.opacity = '0';
                         line.style.animation = 'none';
@@ -497,6 +459,7 @@
                         this.captureFrame(img, img.width, img.height);
                         const result = this.processFrame(img, img.width, img.height);
                         this.state.isScanning = true;
+                        AudioEngine.playScan();
                         this.performRitual(result);
                     };
                     img.src = evt.target.result;
@@ -517,7 +480,7 @@
                 
                 const i18n = {
                     m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
-                    m_tech_text: { ua: "Алгоритм оперує блоками 7x7.", en: "Algorithm operates with 7x7 blocks." }
+                    m_tech_text: { ua: "Динамічна синхронізація орнаменту та QR-матриці.", en: "Dynamic synchronization of ornament and QR matrix." }
                 };
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
@@ -527,9 +490,85 @@
 
             save() {
                 const link = document.createElement('a');
-                link.download = 'qrnament-block-logic.png';
+                link.download = 'qrnament-sync.png';
                 link.href = this.els.canvas.toDataURL();
                 link.click();
+            }
+        };
+
+        // --- AUDIO ENGINE ---
+        const AudioEngine = {
+            ctx: null, scanNodes: [], initialized: false,
+            init() {
+                if(this.initialized) return;
+                try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.initialized = true; } catch(e) {}
+            },
+            playClick() {
+                this.init(); if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sine'; osc.frequency.value = 1200;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.05);
+            },
+            playScan() {
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(1000, now + 2.5);
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.05, now + 0.2);
+                gain.gain.setValueAtTime(0.05, now + 2.0);
+                gain.gain.linearRampToValueAtTime(0, now + 2.5);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 2.6);
+            },
+            startScanAtmosphere() {
+                this.init(); this.stopAll();
+                const drone = this.ctx.createOscillator();
+                drone.type = 'sine'; drone.frequency.value = 40;
+                const droneGain = this.ctx.createGain(); droneGain.gain.value = 0.10;
+                drone.connect(droneGain); droneGain.connect(this.ctx.destination); drone.start();
+                this.scanNodes.push(drone);
+                const beep = this.ctx.createOscillator();
+                beep.type = 'sine'; beep.frequency.value = 880;
+                const beepGain = this.ctx.createGain(); beepGain.gain.value = 0.02;
+                beep.connect(beepGain); beepGain.connect(this.ctx.destination); beep.start();
+                this.scanNodes.push(beep);
+                const toggle = () => {
+                    if(!this.scanNodes.includes(beep)) return;
+                    const now = this.ctx.currentTime;
+                    beepGain.gain.setValueAtTime(beepGain.gain.value, now);
+                    beepGain.gain.linearRampToValueAtTime(beepGain.gain.value > 0.01 ? 0.001 : 0.02, now + 0.2);
+                };
+                this.beepInterval = setInterval(toggle, 400);
+            },
+            stopAll() { if(this.beepInterval) clearInterval(this.beepInterval); this.scanNodes.forEach(n => { try { n.stop(); } catch(e) {} }); this.scanNodes = []; },
+            playResult(success) {
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.1, now);
+                if(success) {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(2500, now);
+                    osc.frequency.exponentialRampToValueAtTime(1500, now + 0.3);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                } else {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(50, now + 0.5);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                }
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.6);
             }
         };
 
