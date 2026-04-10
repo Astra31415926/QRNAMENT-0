@@ -15,8 +15,9 @@
         }
         canvas { 
             image-rendering: pixelated; 
-            border: 1px solid #0f0; 
-            box-shadow: 0 0 30px #0f0;
+            border: 2px solid #0f0; 
+            box-shadow: 0 0 40px #0f0;
+            background: #000;
         }
         textarea {
             width: 100%;
@@ -24,16 +25,18 @@
             background: #111;
             color: #0f0;
             border: 1px solid #0f0;
-            padding: 10px;
+            padding: 12px;
             margin: 15px 0;
             font-family: monospace;
+            resize: vertical;
         }
         button {
             background: #000;
             color: #0f0;
-            border: 1px solid #0f0;
-            padding: 10px 20px;
+            border: 2px solid #0f0;
+            padding: 12px 24px;
             margin: 10px;
+            font-size: 16px;
             cursor: pointer;
         }
         button:hover { background: #0f0; color: #000; }
@@ -43,42 +46,42 @@
 
     <h1>QRnament v4.0 — Minimal</h1>
     
-    <textarea id="input" rows="3" placeholder="Введіть текст для QR...">Hello Snowflake</textarea><br>
+    <textarea id="input" rows="3" placeholder="Введіть текст...">Snowflake Test</textarea><br>
     
-    <button onclick="generate()">Генерувати</button>
+    <button onclick="generate()">Генерувати орнамент</button>
     <button onclick="saveImage()">Зберегти PNG</button>
 
-    <div style="margin: 20px 0;">
+    <div style="margin: 25px 0;">
         <canvas id="canvas" width="1024" height="1024"></canvas>
     </div>
 
-    <p id="status" style="color:#0f0;">Готово</p>
+    <p id="status" style="color:#0f0; font-size:14px;">Готово</p>
 
     <script>
         const CANVAS_SIZE = 1024;
-        const SUB = 3;                    // 3 пікселі орнаменту на 1 модуль QR
+        const SUB = 3;   // 3 пікселі на модуль QR
 
-        // Палітра для сніжинки (сірі тони)
-        const GRAY_LEVELS = [40, 70, 110, 160, 210, 245];
+        const GRAY_LEVELS = [30, 65, 100, 145, 190, 230, 255];
 
         const PATS = {
-            'solid': Array(49).fill(1),
-            'thin':  [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,0,1,0,1,0, 1,1,1,1,1,1,1, 0,1,0,1,0,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0],
-            'star':  [0,0,1,0,1,0,0, 0,1,0,1,0,1,0, 1,0,1,1,1,0,1, 0,1,1,1,1,1,0, 1,0,1,1,1,0,1, 0,1,0,1,0,1,0, 0,0,1,0,1,0,0],
-            'cross': [0,0,1,0,1,0,0, 0,0,1,0,1,0,0, 1,1,1,1,1,1,1, 0,0,1,0,1,0,0, 1,1,1,1,1,1,1, 0,0,1,0,1,0,0, 0,0,1,0,1,0,0]
+            solid: Array(49).fill(1),
+            thin:  [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,0,1,0,1,0, 1,1,1,1,1,1,1, 0,1,0,1,0,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0],
+            star:  [0,0,1,0,1,0,0, 0,1,0,1,0,1,0, 1,0,1,1,1,0,1, 0,1,1,1,1,1,0, 1,0,1,1,1,0,1, 0,1,0,1,0,1,0, 0,0,1,0,1,0,0]
         };
 
-        let ctx, canvas;
+        let canvas, ctx;
 
         function init() {
             canvas = document.getElementById('canvas');
-            ctx = canvas.getContext('2d');
+            ctx = canvas.getContext('2d', { alpha: false });
         }
 
         function generate() {
-            const text = document.getElementById('input').value.trim() || "Snowflake";
+            const text = document.getElementById('input').value.trim() || "Test";
             const status = document.getElementById('status');
+            status.textContent = "Генерація...";
 
+            // Генерація QR
             const qr = qrcode(0, 'M');
             qr.addData(unescape(encodeURIComponent(text)));
             qr.make();
@@ -86,64 +89,58 @@
             const moduleCount = qr.getModuleCount();
             const quietZone = 4;
 
-            // === Створюємо октант ===
             const octantSize = Math.floor(moduleCount / 2) + 1;
 
-            // Червоний шар (блоки)
-            const redMap = buildOctant(octantSize, 0.55);
-            fillLayer(redMap, true);
+            // === Логіка шарів ===
+            const redMap = buildOctant(octantSize, 0.58);
+            fillRed(redMap);
 
-            // Зелений шар — три підшари сніжинки
-            const greenBase   = buildOctant(octantSize, 0.65);   // основні гілки
-            const greenDetail = buildOctant(octantSize, 0.45);   // тонкі деталі
-            const greenShadow = buildOctant(octantSize, 0.75);   // тіні
+            const greenBase   = buildOctant(octantSize, 0.68);
+            const greenDetail = buildOctant(octantSize, 0.48);
+            const greenShadow = buildOctant(octantSize, 0.72);
 
-            fillSnowflakeLayer(greenBase,   0);
-            fillSnowflakeLayer(greenDetail, 1);
-            fillSnowflakeLayer(greenShadow, 2);
+            fillGreen(greenBase,   0);
+            fillGreen(greenDetail, 1);
+            fillGreen(greenShadow, 2);
 
             // === Растеризація ===
-            const redLayer   = renderLayer(redMap, moduleCount);
-            const greenLayer = renderSnowflake(greenBase, greenDetail, greenShadow, moduleCount);
+            const redRaster   = renderRed(redMap, moduleCount);
+            const greenRaster = renderGreen([greenBase, greenDetail, greenShadow], moduleCount);
 
             // === Композитинг ===
-            const imageData = ctx.createImageData(CANVAS_SIZE, CANVAS_SIZE);
+            const imgData = ctx.createImageData(CANVAS_SIZE, CANVAS_SIZE);
 
             for (let i = 0; i < CANVAS_SIZE * CANVAS_SIZE; i++) {
-                const r = redLayer[i] || 0;
-                const g = greenLayer[i] || 0;
-
-                imageData.data[i*4]     = r;                    // Червоний канал — блоки
-                imageData.data[i*4 + 1] = g;                    // Зелений канал — сніжинка в сірих тонах
-                imageData.data[i*4 + 2] = 0;                    // Синій = 0
-                imageData.data[i*4 + 3] = 255;
+                imgData.data[i*4]     = redRaster[i]   || 0;   // Red
+                imgData.data[i*4 + 1] = greenRaster[i] || 0;   // Green — сніжинка
+                imgData.data[i*4 + 2] = 0;                     // Blue
+                imgData.data[i*4 + 3] = 255;
             }
 
-            // === Накладаємо QR-код синім каналом ===
+            // Накладаємо QR синім каналом
             const modPx = CANVAS_SIZE / (moduleCount + quietZone * 2);
             for (let r = 0; r < moduleCount; r++) {
                 for (let c = 0; c < moduleCount; c++) {
                     if (qr.isDark(r, c)) {
                         const sx = Math.floor((c + quietZone) * modPx);
                         const sy = Math.floor((r + quietZone) * modPx);
-                        const ex = Math.floor(sx + modPx);
-                        const ey = Math.floor(sy + modPx);
+                        const size = Math.ceil(modPx);
 
-                        for (let y = sy; y < ey; y++) {
-                            for (let x = sx; x < ex; x++) {
-                                const idx = (y * CANVAS_SIZE + x) * 4;
-                                imageData.data[idx + 2] = 160;   // Синій QR
+                        for (let y = sy; y < sy + size; y++) {
+                            for (let x = sx; x < sx + size; x++) {
+                                if (x < CANVAS_SIZE && y < CANVAS_SIZE) {
+                                    const idx = (y * CANVAS_SIZE + x) * 4;
+                                    imgData.data[idx + 2] = 155;
+                                }
                             }
                         }
                     }
                 }
             }
 
-            ctx.putImageData(imageData, 0, 0);
-            status.textContent = `Готово | QR ${moduleCount}×${moduleCount}`;
+            ctx.putImageData(imgData, 0, 0);
+            status.textContent = `Готово • QR ${moduleCount}×${moduleCount}`;
         }
-
-        // ==================== ДОПОМІЖНІ ФУНКЦІЇ ====================
 
         function buildOctant(size, density) {
             const map = [];
@@ -156,55 +153,56 @@
             return map;
         }
 
-        function fillLayer(map, isBlock) {
+        function fillRed(map) {
             for (let r = 0; r < map.length; r++) {
                 for (let c = 0; c <= r; c++) {
                     if (map[r][c].on) {
-                        map[r][c].color = isBlock ? 
-                            [100, 140, 180][Math.floor(Math.random()*3)] : 
-                            GRAY_LEVELS[Math.floor(Math.random()*GRAY_LEVELS.length)];
+                        map[r][c].color = [110, 150, 190][Math.floor(Math.random()*3)];
                     }
                 }
             }
         }
 
-        function fillSnowflakeLayer(map, layerType) {
-            const keys = Object.keys(PATS);
+        function fillGreen(map, variant) {
+            const levels = [100, 140, 180, 210, 240];
             for (let r = 0; r < map.length; r++) {
                 for (let c = 0; c <= r; c++) {
                     if (map[r][c].on) {
-                        map[r][c].patKey = keys[layerType % keys.length];
-                        map[r][c].color = GRAY_LEVELS[layerType * 2 + Math.floor(Math.random()*2) + 2];
+                        map[r][c].color = levels[(variant * 2 + Math.floor(Math.random()*2)) % levels.length];
+                        map[r][c].pat = variant === 0 ? 'solid' : (variant === 1 ? 'star' : 'thin');
                     }
                 }
             }
         }
 
-        function renderLayer(map, moduleCount) {
+        function renderRed(map, moduleCount) {
             const raster = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE);
-            const microSize = CANVAS_SIZE / (moduleCount * SUB);
+            const pxSize = CANVAS_SIZE / (moduleCount * SUB);
             const center = Math.floor(moduleCount / 2);
 
             for (let mr = 0; mr < moduleCount; mr++) {
                 for (let mc = 0; mc < moduleCount; mc++) {
-                    const absR = Math.abs(mr - center);
-                    const absC = Math.abs(mc - center);
-                    const srcR = Math.max(absR, absC);
-                    const srcC = Math.min(absR, absC);
+                    const srcR = Math.max(Math.abs(mr - center), Math.abs(mc - center));
+                    const srcC = Math.min(Math.abs(mr - center), Math.abs(mc - center));
 
                     const cell = map[srcR]?.[srcC];
                     if (!cell || !cell.on) continue;
 
-                    const doTranspose = (absR < absC);
-                    const flipY = (mr < center);
-                    const flipX = (mc < center);
+                    const color = cell.color;
+                    const flipX = mc < center;
+                    const flipY = mr < center;
 
-                    // Малюємо 3×3
-                    for (let i = 0; i < 49; i++) {
-                        if (i % 7 === 3 && Math.floor(i/7) === 3) { // центральний піксель завжди заповнений
-                            const x = Math.floor((mc * SUB + 1) * microSize);
-                            const y = Math.floor((mr * SUB + 1) * microSize);
-                            fillRect(raster, x, y, microSize, cell.color);
+                    for (let sy = 0; sy < SUB; sy++) {
+                        for (let sx = 0; sx < SUB; sx++) {
+                            let px = sx;
+                            let py = sy;
+                            if (flipX) px = SUB - 1 - px;
+                            if (flipY) py = SUB - 1 - py;
+
+                            const x = Math.floor((mc * SUB + px) * pxSize);
+                            const y = Math.floor((mr * SUB + py) * pxSize);
+
+                            fillBlock(raster, x, y, pxSize, color);
                         }
                     }
                 }
@@ -212,29 +210,24 @@
             return raster;
         }
 
-        function renderSnowflake(base, detail, shadow, moduleCount) {
+        function renderGreen(layers, moduleCount) {
             const raster = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE);
-            const microSize = CANVAS_SIZE / (moduleCount * SUB);
+            const pxSize = CANVAS_SIZE / (moduleCount * SUB);
             const center = Math.floor(moduleCount / 2);
 
-            const layers = [base, detail, shadow];
-
-            for (let layerIdx = 0; layerIdx < 3; layerIdx++) {
-                const map = layers[layerIdx];
+            layers.forEach((map, idx) => {
                 for (let mr = 0; mr < moduleCount; mr++) {
                     for (let mc = 0; mc < moduleCount; mc++) {
-                        const absR = Math.abs(mr - center);
-                        const absC = Math.abs(mc - center);
-                        const srcR = Math.max(absR, absC);
-                        const srcC = Math.min(absR, absC);
+                        const srcR = Math.max(Math.abs(mr - center), Math.abs(mc - center));
+                        const srcC = Math.min(Math.abs(mr - center), Math.abs(mc - center));
 
                         const cell = map[srcR]?.[srcC];
                         if (!cell || !cell.on) continue;
 
-                        const pat = PATS[cell.patKey] || PATS['solid'];
-                        const doTranspose = (absR < absC);
-                        const flipY = (mr < center);
-                        const flipX = (mc < center);
+                        const pat = PATS[cell.pat] || PATS.solid;
+                        const flipX = mc < center;
+                        const flipY = mr < center;
+                        const transpose = Math.abs(mr - center) < Math.abs(mc - center);
 
                         for (let i = 0; i < 49; i++) {
                             if (pat[i] === 0) continue;
@@ -242,12 +235,49 @@
                             let pr = Math.floor(i / 7);
                             let pc = i % 7;
 
-                            if (doTranspose) [pc, pr] = [pr, pc];
+                            if (transpose) [pc, pr] = [pr, pc];
                             if (flipY) pr = 6 - pr;
                             if (flipX) pc = 6 - pc;
 
-                            const microX = pc % 3;
-                            const microY = pr % 3;
+                            const microX = pc % SUB;
+                            const microY = pr % SUB;
 
-                            const x = Math.floor((mc * SUB + microX) * microSize);
-                            const y = Math.floor((mr * SUB + microY)
+                            const x = Math.floor((mc * SUB + microX) * pxSize);
+                            const y = Math.floor((mr * SUB + microY) * pxSize);
+
+                            fillBlock(raster, x, y, pxSize, cell.color);
+                        }
+                    }
+                }
+            });
+            return raster;
+        }
+
+        function fillBlock(raster, x, y, size, color) {
+            const x1 = Math.floor(x);
+            const y1 = Math.floor(y);
+            const x2 = Math.floor(x + size);
+            const y2 = Math.floor(y + size);
+
+            for (let py = y1; py < y2 && py < CANVAS_SIZE; py++) {
+                for (let px = x1; px < x2 && px < CANVAS_SIZE; px++) {
+                    raster[py * CANVAS_SIZE + px] = color;
+                }
+            }
+        }
+
+        function saveImage() {
+            const link = document.createElement('a');
+            link.download = 'qrnament.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Запуск
+        window.onload = () => {
+            init();
+            generate();
+        };
+    </script>
+</body>
+</html>
