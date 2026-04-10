@@ -2,358 +2,252 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament v4.0 // Pixel Perfect Snowflake</title>
-   
-    <!-- Libraries -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRnament v4.0 — Minimal</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    
     <style>
-        body { background: #000; color: #fff; font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
-        .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; }
-        .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
-        #canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-        #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #000; transform: scaleX(-1); display: none; }
-        .scan-line { position: absolute; left: 0; right: 0; height: 4px; background: #00ff41; box-shadow: 0 0 20px #00ff41, 0 0 40px #00ff41; top: 0; z-index: 20; pointer-events: none; display: none; }
-        @keyframes pulse { 0% { opacity: 0.6; box-shadow: 0 0 20px #00ff41; height: 2px; } 50% { opacity: 1; box-shadow: 0 0 40px #00ff41, 0 0 10px #fff; height: 6px; } 100% { opacity: 0.6; box-shadow: 0 0 20px #00ff41; height: 2px; } }
-        .flash-overlay { position: absolute; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 30; transition: opacity 0.1s; }
-        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 100; transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; padding: 2rem; overflow-y: auto; }
-        .menu-overlay.open { transform: translateX(0); }
-        .btn-active:active { transform: scale(0.96); }
-        .neon-btn-green { background: rgba(0, 255, 65, 0.05); border: 1px solid #00ff41; box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 255, 65, 0.05); text-shadow: 0 0 5px #00ff41; transition: all 0.2s; }
-        .neon-btn-green:hover { box-shadow: 0 0 20px #00ff41, inset 0 0 30px rgba(0, 255, 65, 0.1); }
-        ::-webkit-scrollbar { width: 4px; } 
-        ::-webkit-scrollbar-track { background: #111; } 
-        ::-webkit-scrollbar-thumb { background: #00ff41; }
+        body { 
+            background: #000; 
+            color: #0f0; 
+            font-family: monospace; 
+            text-align: center; 
+            padding: 20px;
+        }
+        canvas { 
+            image-rendering: pixelated; 
+            border: 1px solid #0f0; 
+            box-shadow: 0 0 30px #0f0;
+        }
+        textarea {
+            width: 100%;
+            max-width: 500px;
+            background: #111;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin: 15px 0;
+            font-family: monospace;
+        }
+        button {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        button:hover { background: #0f0; color: #000; }
     </style>
 </head>
-<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
-    <div id="menu-overlay" class="menu-overlay">
-        <div class="flex justify-between items-center mb-8">
-            <div class="flex gap-2 bg-zinc-800 p-1 rounded-lg border border-white/10">
-                <button onclick="App.setLang('ua')" id="btn-lang-ua" class="text-xs font-bold px-3 py-1 rounded transition-colors">UA</button>
-                <button onclick="App.setLang('en')" id="btn-lang-en" class="text-xs font-bold px-3 py-1 rounded transition-colors text-zinc-500">EN</button>
-            </div>
-            <button onclick="App.toggleMenu()" class="text-3xl text-zinc-500 hover:text-white">&times;</button>
-        </div>
-        <div class="space-y-6 text-sm">
-            <div>
-                <h2 class="text-xl font-black mb-2 flex items-center gap-2">
-                    <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
-                </h2>
-                <p class="text-neonGreen opacity-70">v4.0 // 3×3 Pixel Perfect</p>
-            </div>
-        </div>
-    </div>
+<body>
 
-    <header class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-black tracking-tighter uppercase">
-            <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
-        </h1>
-        <button onclick="App.toggleMenu()" class="text-white text-xl p-2 border border-white/10 rounded-lg hover:bg-white/10 transition-colors">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-        </button>
-    </header>
+    <h1>QRnament v4.0 — Minimal</h1>
+    
+    <textarea id="input" rows="3" placeholder="Введіть текст для QR...">Hello Snowflake</textarea><br>
+    
+    <button onclick="generate()">Генерувати</button>
+    <button onclick="saveImage()">Зберегти PNG</button>
 
-    <div class="mb-4 relative">
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 pr-12" placeholder="Type to generate..."></textarea>
-        <button onclick="App.clearText()" class="absolute right-3 top-3 text-zinc-500 hover:text-red-500 transition-colors p-1">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-        </button>
-    </div>
-
-    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
+    <div style="margin: 20px 0;">
         <canvas id="canvas" width="1024" height="1024"></canvas>
-        <video id="video" playsinline></video>
-        <div id="scan-line" class="scan-line"></div>
-        <div id="flash-layer" class="flash-overlay"></div>
     </div>
 
-    <div class="flex flex-col gap-3">
-        <button onclick="App.save()" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Save PNG</button>
-       
-        <div class="grid grid-cols-2 gap-3">
-            <button onclick="App.startCamera()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Cam Scan</button>
-            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">File Scan</button>
-        </div>
-        <input type="file" id="file-input" accept="image/*" class="hidden">
-    </div>
-
-    <p id="status" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Ready</p>
+    <p id="status" style="color:#0f0;">Готово</p>
 
     <script>
-        // ==================== CONSTANTS ====================
-        const CELL = 3;                    // 3×3 пікселі на один модуль QR
         const CANVAS_SIZE = 1024;
-        const PAL_BLOCKS = [90, 120, 160, 200];
-        const PAL_PATTERNS = [140, 170, 200, 230];
+        const SUB = 3;                    // 3 пікселі орнаменту на 1 модуль QR
 
-        const FILL_KEYS = ['p10','p12','p14','p15','p21','p25','p27','p28','p29','p30','p32','p33','p34','p36','p38','p39','p41','p47','n1','n2'];
+        // Палітра для сніжинки (сірі тони)
+        const GRAY_LEVELS = [40, 70, 110, 160, 210, 245];
 
         const PATS = {
-            // ... (твої патерни залишаються ті самі, я їх не змінюю для економії місця)
-            'p10': [0,1,0,1,0,1,0,1,0,0,0,0,0,1,0,0,1,1,1,0,0,1,0,1,1,1,0,1,0,0,1,1,1,0,0,1,0,0,0,0,0,1,0,1,0,1,0,1,0],
-            'p12': [0,1,1,0,1,1,0,0,1,1,0,1,1,0,0,1,1,0,1,1,0,0,1,1,0,1,1,0,0,1,1,0,1,1,0,0,1,1,0,1,1,0,0,1,1,0,1,1,0],
-            // Додай сюди всі інші патерни з твого оригінального коду (p14 ... p47, n1, n2...)
-            // Для скорочення я залишив тільки два, але ти можеш вставити всі
-            's':   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+            'solid': Array(49).fill(1),
+            'thin':  [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,0,1,0,1,0, 1,1,1,1,1,1,1, 0,1,0,1,0,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0],
+            'star':  [0,0,1,0,1,0,0, 0,1,0,1,0,1,0, 1,0,1,1,1,0,1, 0,1,1,1,1,1,0, 1,0,1,1,1,0,1, 0,1,0,1,0,1,0, 0,0,1,0,1,0,0],
+            'cross': [0,0,1,0,1,0,0, 0,0,1,0,1,0,0, 1,1,1,1,1,1,1, 0,0,1,0,1,0,0, 1,1,1,1,1,1,1, 0,0,1,0,1,0,0, 0,0,1,0,1,0,0]
         };
 
-        // ==================== LOGIC ENGINE ====================
-        const LogicEngine = {
-            buildOctantMap(gridSize) {
-                const center = Math.floor(gridSize / 2);
-                let map = [];
-                for (let r = 0; r <= center; r++) {
-                    map[r] = [];
-                    for (let c = 0; c <= r; c++) {
-                        map[r][c] = {
-                            on: Math.random() > 0.45,   // щільність орнаменту
-                            isBlock: Math.random() > 0.6,
-                            color: 0,
-                            patKey: 's'
-                        };
-                    }
-                }
-                return map;
-            },
+        let ctx, canvas;
 
-            fillLogic(map, isBlockLayer) {
-                const quad = map.length;
-                for (let r = 0; r < quad; r++) {
-                    for (let c = 0; c <= r; c++) {
-                        let cell = map[r][c];
-                        if (!cell.on) continue;
+        function init() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+        }
 
-                        if (isBlockLayer) {
-                            cell.isBlock = true;
-                            cell.color = PAL_BLOCKS[Math.floor(Math.random() * PAL_BLOCKS.length)];
-                            cell.patKey = 's';
-                        } else {
-                            cell.isBlock = false;
-                            cell.color = PAL_PATTERNS[Math.floor(Math.random() * PAL_PATTERNS.length)];
-                            cell.patKey = FILL_KEYS[Math.floor(Math.random() * FILL_KEYS.length)];
+        function generate() {
+            const text = document.getElementById('input').value.trim() || "Snowflake";
+            const status = document.getElementById('status');
+
+            const qr = qrcode(0, 'M');
+            qr.addData(unescape(encodeURIComponent(text)));
+            qr.make();
+
+            const moduleCount = qr.getModuleCount();
+            const quietZone = 4;
+
+            // === Створюємо октант ===
+            const octantSize = Math.floor(moduleCount / 2) + 1;
+
+            // Червоний шар (блоки)
+            const redMap = buildOctant(octantSize, 0.55);
+            fillLayer(redMap, true);
+
+            // Зелений шар — три підшари сніжинки
+            const greenBase   = buildOctant(octantSize, 0.65);   // основні гілки
+            const greenDetail = buildOctant(octantSize, 0.45);   // тонкі деталі
+            const greenShadow = buildOctant(octantSize, 0.75);   // тіні
+
+            fillSnowflakeLayer(greenBase,   0);
+            fillSnowflakeLayer(greenDetail, 1);
+            fillSnowflakeLayer(greenShadow, 2);
+
+            // === Растеризація ===
+            const redLayer   = renderLayer(redMap, moduleCount);
+            const greenLayer = renderSnowflake(greenBase, greenDetail, greenShadow, moduleCount);
+
+            // === Композитинг ===
+            const imageData = ctx.createImageData(CANVAS_SIZE, CANVAS_SIZE);
+
+            for (let i = 0; i < CANVAS_SIZE * CANVAS_SIZE; i++) {
+                const r = redLayer[i] || 0;
+                const g = greenLayer[i] || 0;
+
+                imageData.data[i*4]     = r;                    // Червоний канал — блоки
+                imageData.data[i*4 + 1] = g;                    // Зелений канал — сніжинка в сірих тонах
+                imageData.data[i*4 + 2] = 0;                    // Синій = 0
+                imageData.data[i*4 + 3] = 255;
+            }
+
+            // === Накладаємо QR-код синім каналом ===
+            const modPx = CANVAS_SIZE / (moduleCount + quietZone * 2);
+            for (let r = 0; r < moduleCount; r++) {
+                for (let c = 0; c < moduleCount; c++) {
+                    if (qr.isDark(r, c)) {
+                        const sx = Math.floor((c + quietZone) * modPx);
+                        const sy = Math.floor((r + quietZone) * modPx);
+                        const ex = Math.floor(sx + modPx);
+                        const ey = Math.floor(sy + modPx);
+
+                        for (let y = sy; y < ey; y++) {
+                            for (let x = sx; x < ex; x++) {
+                                const idx = (y * CANVAS_SIZE + x) * 4;
+                                imageData.data[idx + 2] = 160;   // Синій QR
+                            }
                         }
                     }
                 }
             }
-        };
 
-        // ==================== RENDER ENGINE ====================
-        const RenderEngine = {
-            rasterize(ornamentGrid, logicMap, isBlockLayer) {
-                const raster = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE);
-                const cellSize = CANVAS_SIZE / (ornamentGrid * CELL);   // розмір 1 мікро-пікселя
+            ctx.putImageData(imageData, 0, 0);
+            status.textContent = `Готово | QR ${moduleCount}×${moduleCount}`;
+        }
 
-                const center = Math.floor(ornamentGrid / 2);
+        // ==================== ДОПОМІЖНІ ФУНКЦІЇ ====================
 
-                for (let r = 0; r < ornamentGrid; r++) {
-                    for (let c = 0; c < ornamentGrid; c++) {
-                        // Отримуємо джерело з октанту
-                        const absR = Math.abs(r - center);
-                        const absC = Math.abs(c - center);
+        function buildOctant(size, density) {
+            const map = [];
+            for (let r = 0; r < size; r++) {
+                map[r] = [];
+                for (let c = 0; c <= r; c++) {
+                    map[r][c] = { on: Math.random() < density };
+                }
+            }
+            return map;
+        }
+
+        function fillLayer(map, isBlock) {
+            for (let r = 0; r < map.length; r++) {
+                for (let c = 0; c <= r; c++) {
+                    if (map[r][c].on) {
+                        map[r][c].color = isBlock ? 
+                            [100, 140, 180][Math.floor(Math.random()*3)] : 
+                            GRAY_LEVELS[Math.floor(Math.random()*GRAY_LEVELS.length)];
+                    }
+                }
+            }
+        }
+
+        function fillSnowflakeLayer(map, layerType) {
+            const keys = Object.keys(PATS);
+            for (let r = 0; r < map.length; r++) {
+                for (let c = 0; c <= r; c++) {
+                    if (map[r][c].on) {
+                        map[r][c].patKey = keys[layerType % keys.length];
+                        map[r][c].color = GRAY_LEVELS[layerType * 2 + Math.floor(Math.random()*2) + 2];
+                    }
+                }
+            }
+        }
+
+        function renderLayer(map, moduleCount) {
+            const raster = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE);
+            const microSize = CANVAS_SIZE / (moduleCount * SUB);
+            const center = Math.floor(moduleCount / 2);
+
+            for (let mr = 0; mr < moduleCount; mr++) {
+                for (let mc = 0; mc < moduleCount; mc++) {
+                    const absR = Math.abs(mr - center);
+                    const absC = Math.abs(mc - center);
+                    const srcR = Math.max(absR, absC);
+                    const srcC = Math.min(absR, absC);
+
+                    const cell = map[srcR]?.[srcC];
+                    if (!cell || !cell.on) continue;
+
+                    const doTranspose = (absR < absC);
+                    const flipY = (mr < center);
+                    const flipX = (mc < center);
+
+                    // Малюємо 3×3
+                    for (let i = 0; i < 49; i++) {
+                        if (i % 7 === 3 && Math.floor(i/7) === 3) { // центральний піксель завжди заповнений
+                            const x = Math.floor((mc * SUB + 1) * microSize);
+                            const y = Math.floor((mr * SUB + 1) * microSize);
+                            fillRect(raster, x, y, microSize, cell.color);
+                        }
+                    }
+                }
+            }
+            return raster;
+        }
+
+        function renderSnowflake(base, detail, shadow, moduleCount) {
+            const raster = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE);
+            const microSize = CANVAS_SIZE / (moduleCount * SUB);
+            const center = Math.floor(moduleCount / 2);
+
+            const layers = [base, detail, shadow];
+
+            for (let layerIdx = 0; layerIdx < 3; layerIdx++) {
+                const map = layers[layerIdx];
+                for (let mr = 0; mr < moduleCount; mr++) {
+                    for (let mc = 0; mc < moduleCount; mc++) {
+                        const absR = Math.abs(mr - center);
+                        const absC = Math.abs(mc - center);
                         const srcR = Math.max(absR, absC);
                         const srcC = Math.min(absR, absC);
 
-                        const block = logicMap[srcR]?.[srcC];
-                        if (!block || !block.on) continue;
+                        const cell = map[srcR]?.[srcC];
+                        if (!cell || !cell.on) continue;
 
-                        const pat = PATS[block.patKey] || PATS['s'];
-                        if (!pat) continue;
-
+                        const pat = PATS[cell.patKey] || PATS['solid'];
                         const doTranspose = (absR < absC);
-                        const doFlipY = (r < center);
-                        const doFlipX = (c < center);
+                        const flipY = (mr < center);
+                        const flipX = (mc < center);
 
-                        // Малюємо 3×3 всередині модуля
-                        for (let i = 0; i < 49; i++) {   // 7×7 патерн
-                            if (pat[i] !== 1) continue;
+                        for (let i = 0; i < 49; i++) {
+                            if (pat[i] === 0) continue;
 
                             let pr = Math.floor(i / 7);
                             let pc = i % 7;
 
                             if (doTranspose) [pc, pr] = [pr, pc];
-                            if (doFlipY) pr = 6 - pr;
-                            if (doFlipX) pc = 6 - pc;
+                            if (flipY) pr = 6 - pr;
+                            if (flipX) pc = 6 - pc;
 
-                            // Перетворюємо в координати 3×3 всередині модуля
                             const microX = pc % 3;
                             const microY = pr % 3;
 
-                            const startX = Math.floor((c * CELL + microX) * cellSize);
-                            const startY = Math.floor((r * CELL + microY) * cellSize);
-                            const endX = Math.floor(startX + cellSize);
-                            const endY = Math.floor(startY + cellSize);
-
-                            for (let py = startY; py < endY; py++) {
-                                for (let px = startX; px < endX; px++) {
-                                    if (px >= 0 && px < CANVAS_SIZE && py >= 0 && py < CANVAS_SIZE) {
-                                        raster[py * CANVAS_SIZE + px] = block.color;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                return raster;
-            }
-        };
-
-        // ==================== APP ====================
-        const App = {
-            state: { lang: 'ua', frozen: false, isScanning: false },
-            els: {},
-
-            init() {
-                this.els = {
-                    canvas: document.getElementById('canvas'),
-                    video: document.getElementById('video'),
-                    input: document.getElementById('main-input'),
-                    status: document.getElementById('status'),
-                    scanLine: document.getElementById('scan-line'),
-                    flash: document.getElementById('flash-layer'),
-                    menu: document.getElementById('menu-overlay'),
-                    fileInput: document.getElementById('file-input')
-                };
-                this.els.ctx = this.els.canvas.getContext('2d');
-
-                this.els.input.addEventListener('input', () => {
-                    if (this.state.frozen) this.state.frozen = false;
-                    this.generate();
-                });
-
-                this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
-
-                this.clearCanvas();
-                this.setLang('ua');
-            },
-
-            generate() {
-                const text = this.els.input.value.trim();
-                if (!text) {
-                    this.clearCanvas();
-                    this.updateStatus("Waiting...");
-                    return;
-                }
-
-                try {
-                    const utf8Text = unescape(encodeURIComponent(text));
-                    const qr = qrcode(0, 'M');
-                    qr.addData(utf8Text);
-                    qr.make();
-
-                    const moduleCount = qr.getModuleCount();
-                    const quietZone = 4;
-                    const ornamentGrid = moduleCount;                    // ключова зміна
-                    const totalMicroCells = ornamentGrid * CELL;         // наприклад 25 * 3 = 75
-
-                    this.updateStatus("Phase 1: Logic...");
-
-                    // === LOGIC ===
-                    const mapRed = LogicEngine.buildOctantMap(ornamentGrid);
-                    LogicEngine.fillLogic(mapRed, true);   // Block layer
-
-                    const mapGreen = LogicEngine.buildOctantMap(ornamentGrid);
-                    LogicEngine.fillLogic(mapGreen, false); // Pattern layer
-
-                    this.updateStatus("Phase 2: Raster...");
-
-                    // === RASTER ===
-                    const rasterRed = RenderEngine.rasterize(ornamentGrid, mapRed, true);
-                    const rasterGreen = RenderEngine.rasterize(ornamentGrid, mapGreen, false);
-
-                    this.updateStatus("Phase 3: Compositing...");
-
-                    // === FINAL IMAGE ===
-                    const finalData = this.els.ctx.createImageData(CANVAS_SIZE, CANVAS_SIZE);
-
-                    for (let i = 0; i < CANVAS_SIZE * CANVAS_SIZE; i++) {
-                        const r = rasterRed[i];
-                        const g = rasterGreen[i];
-
-                        finalData.data[i*4]     = r;                    // Red  - блоки
-                        finalData.data[i*4 + 1] = Math.max(0, r - g);   // Green - різниця
-                        finalData.data[i*4 + 2] = 0;                    // Blue
-                        finalData.data[i*4 + 3] = 255;
-                    }
-
-                    // === QR OVERLAY (Blue channel) ===
-                    const modSize = CANVAS_SIZE / (moduleCount + quietZone * 2);
-                    for (let r = 0; r < moduleCount; r++) {
-                        for (let c = 0; c < moduleCount; c++) {
-                            if (qr.isDark(r, c)) {
-                                const startX = Math.floor((c + quietZone) * modSize);
-                                const startY = Math.floor((r + quietZone) * modSize);
-                                const endX = Math.floor(startX + modSize);
-                                const endY = Math.floor(startY + modSize);
-
-                                for (let py = startY; py < endY; py++) {
-                                    for (let px = startX; px < endX; px++) {
-                                        const idx = (py * CANVAS_SIZE + px) * 4;
-                                        finalData.data[idx + 2] = 180;   // Blue QR
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    this.els.ctx.putImageData(finalData, 0, 0);
-                    this.updateStatus("Done ✓");
-
-                } catch (e) {
-                    console.error(e);
-                    this.updateStatus("Error");
-                }
-            },
-
-            // ==================== СКАНЕР І ІНШІ ФУНКЦІЇ (залишені майже без змін) ====================
-            clearText() {
-                this.els.input.value = "";
-                this.clearCanvas();
-                this.updateStatus("Cleared");
-            },
-
-            toggleMenu() { this.els.menu.classList.toggle('open'); },
-
-            save() {
-                const link = document.createElement('a');
-                link.download = 'qrnament-v4.0.png';
-                link.href = this.els.canvas.toDataURL('image/png');
-                link.click();
-            },
-
-            clearCanvas() {
-                this.els.ctx.fillStyle = "#000";
-                this.els.ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-            },
-
-            updateStatus(msg) {
-                this.els.status.innerText = msg;
-            },
-
-            setLang(lang) {
-                this.state.lang = lang;
-                // простий переклад (можна розширити)
-                document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
-                document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
-                document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
-                document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
-            },
-
-            // Камера, файл, сканер — залишено з оригіналу (можна оптимізувати пізніше)
-            startCamera() { /* ... той самий код ... */ },
-            stopCamera() { /* ... */ },
-            scanLoop() { /* ... */ },
-            processFrame() { /* ... */ },
-            captureFrame() { /* ... */ },
-            performRitual() { /* ... */ },
-            handleFile(e) { /* ... */ }
-        };
-
-        // Запуск
-        document.addEventListener('DOMContentLoaded', () => App.init());
-    </script>
-</body>
-</html>
+                            const x = Math.floor((mc * SUB + microX) * microSize);
+                            const y = Math.floor((mr * SUB + microY)
