@@ -3,134 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QRnament v4.0 — Minimal</title>
+    <title>QRnament — 3×3 Exact</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style>
-        body { 
-            background: #000; 
-            color: #0f0; 
-            font-family: monospace; 
-            text-align: center; 
-            padding: 20px;
-        }
-        canvas { 
-            image-rendering: pixelated; 
-            border: 2px solid #0f0; 
-            box-shadow: 0 0 40px #0f0;
-            background: #000;
-        }
-        textarea {
-            width: 100%;
-            max-width: 500px;
-            background: #111;
-            color: #0f0;
-            border: 1px solid #0f0;
-            padding: 12px;
-            margin: 15px 0;
-            font-family: monospace;
-            resize: vertical;
-        }
-        button {
-            background: #000;
-            color: #0f0;
-            border: 2px solid #0f0;
-            padding: 12px 24px;
-            margin: 10px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:hover { background: #0f0; color: #000; }
+        body { background:#000; color:#0f0; font-family:monospace; text-align:center; padding:20px; }
+        canvas { image-rendering:pixelated; border:2px solid #0f0; box-shadow:0 0 40px #0f0; }
+        textarea { width:90%; max-width:500px; background:#111; color:#0f0; border:1px solid #0f0; padding:12px; margin:15px 0; }
+        button { background:#000; color:#0f0; border:2px solid #0f0; padding:12px 24px; margin:10px; cursor:pointer; font-size:16px; }
+        button:hover { background:#0f0; color:#000; }
     </style>
 </head>
 <body>
 
-    <h1>QRnament v4.0 — Minimal</h1>
+    <h1>QRnament — Exact 3×3</h1>
+    <textarea id="input" rows="3">Exact 3x3 Test</textarea><br>
     
-    <textarea id="input" rows="3" placeholder="Введіть текст...">Snowflake Test</textarea><br>
-    
-    <button onclick="generate()">Генерувати орнамент</button>
+    <button onclick="generate()">Генерувати</button>
     <button onclick="saveImage()">Зберегти PNG</button>
 
-    <div style="margin: 25px 0;">
+    <div style="margin:25px 0">
         <canvas id="canvas" width="1024" height="1024"></canvas>
     </div>
 
-    <p id="status" style="color:#0f0; font-size:14px;">Готово</p>
+    <p id="status" style="color:#0f0">Готово</p>
 
     <script>
-        const CANVAS_SIZE = 1024;
-        const SUB = 3;   // 3 пікселі на модуль QR
-
-        const GRAY_LEVELS = [30, 65, 100, 145, 190, 230, 255];
-
-        const PATS = {
-            solid: Array(49).fill(1),
-            thin:  [0,0,0,1,0,0,0, 0,0,1,1,1,0,0, 0,1,0,1,0,1,0, 1,1,1,1,1,1,1, 0,1,0,1,0,1,0, 0,0,1,1,1,0,0, 0,0,0,1,0,0,0],
-            star:  [0,0,1,0,1,0,0, 0,1,0,1,0,1,0, 1,0,1,1,1,0,1, 0,1,1,1,1,1,0, 1,0,1,1,1,0,1, 0,1,0,1,0,1,0, 0,0,1,0,1,0,0]
-        };
-
-        let canvas, ctx;
-
-        function init() {
-            canvas = document.getElementById('canvas');
-            ctx = canvas.getContext('2d', { alpha: false });
-        }
+        const SIZE = 1024;
 
         function generate() {
             const text = document.getElementById('input').value.trim() || "Test";
             const status = document.getElementById('status');
             status.textContent = "Генерація...";
 
-            // Генерація QR
+            // 1. Генеруємо QR
             const qr = qrcode(0, 'M');
             qr.addData(unescape(encodeURIComponent(text)));
             qr.make();
 
-            const moduleCount = qr.getModuleCount();
+            const modules = qr.getModuleCount();           // наприклад 25
+            const grid = modules * 3;                      // наприклад 75  ← ось ключова лінія
+            const cellSize = SIZE / grid;                  // розмір одного мікро-пікселя орнаменту
+
             const quietZone = 4;
 
-            const octantSize = Math.floor(moduleCount / 2) + 1;
+            // 2. Будуємо октант (1/8 сніжинки)
+            const octantSize = Math.floor(modules / 2) + 1;
+            const redMap   = buildOctant(octantSize, 0.62);
+            const greenMap = buildOctant(octantSize, 0.58);
 
-            // === Логіка шарів ===
-            const redMap = buildOctant(octantSize, 0.58);
-            fillRed(redMap);
+            fillMap(redMap,   [90, 130, 170]);
+            fillMap(greenMap, [60, 95, 130, 170, 210, 245]);
 
-            const greenBase   = buildOctant(octantSize, 0.68);
-            const greenDetail = buildOctant(octantSize, 0.48);
-            const greenShadow = buildOctant(octantSize, 0.72);
+            // 3. Растеризація
+            const redRaster   = renderOctant(redMap,   grid, cellSize);
+            const greenRaster = renderOctant(greenMap, grid, cellSize);
 
-            fillGreen(greenBase,   0);
-            fillGreen(greenDetail, 1);
-            fillGreen(greenShadow, 2);
+            // 4. Композитинг
+            const imgData = ctx.createImageData(SIZE, SIZE);
 
-            // === Растеризація ===
-            const redRaster   = renderRed(redMap, moduleCount);
-            const greenRaster = renderGreen([greenBase, greenDetail, greenShadow], moduleCount);
-
-            // === Композитинг ===
-            const imgData = ctx.createImageData(CANVAS_SIZE, CANVAS_SIZE);
-
-            for (let i = 0; i < CANVAS_SIZE * CANVAS_SIZE; i++) {
-                imgData.data[i*4]     = redRaster[i]   || 0;   // Red
-                imgData.data[i*4 + 1] = greenRaster[i] || 0;   // Green — сніжинка
-                imgData.data[i*4 + 2] = 0;                     // Blue
+            for (let i = 0; i < SIZE * SIZE; i++) {
+                imgData.data[i*4]     = redRaster[i]   || 0;     // Червоний канал
+                imgData.data[i*4 + 1] = greenRaster[i] || 0;     // Зелений канал — сніжинка
+                imgData.data[i*4 + 2] = 0;
                 imgData.data[i*4 + 3] = 255;
             }
 
-            // Накладаємо QR синім каналом
-            const modPx = CANVAS_SIZE / (moduleCount + quietZone * 2);
-            for (let r = 0; r < moduleCount; r++) {
-                for (let c = 0; c < moduleCount; c++) {
+            // 5. Накладаємо QR
+            const modPx = SIZE / (modules + quietZone * 2);
+            for (let r = 0; r < modules; r++) {
+                for (let c = 0; c < modules; c++) {
                     if (qr.isDark(r, c)) {
                         const sx = Math.floor((c + quietZone) * modPx);
                         const sy = Math.floor((r + quietZone) * modPx);
-                        const size = Math.ceil(modPx);
-
-                        for (let y = sy; y < sy + size; y++) {
-                            for (let x = sx; x < sx + size; x++) {
-                                if (x < CANVAS_SIZE && y < CANVAS_SIZE) {
-                                    const idx = (y * CANVAS_SIZE + x) * 4;
-                                    imgData.data[idx + 2] = 155;
+                        for (let y = sy; y < sy + modPx; y++) {
+                            for (let x = sx; x < sx + modPx; x++) {
+                                if (x < SIZE && y < SIZE) {
+                                    const idx = (y * SIZE + x) * 4;
+                                    imgData.data[idx + 2] = 160;
                                 }
                             }
                         }
@@ -139,143 +88,78 @@
             }
 
             ctx.putImageData(imgData, 0, 0);
-            status.textContent = `Готово • QR ${moduleCount}×${moduleCount}`;
+            status.textContent = `Готово • ${modules}×${modules} → ${grid}×${grid}`;
         }
+
+        // ==================== Прості функції ====================
 
         function buildOctant(size, density) {
             const map = [];
             for (let r = 0; r < size; r++) {
                 map[r] = [];
                 for (let c = 0; c <= r; c++) {
-                    map[r][c] = { on: Math.random() < density };
+                    map[r][c] = { 
+                        on: Math.random() < density,
+                        brightness: 0 
+                    };
                 }
             }
             return map;
         }
 
-        function fillRed(map) {
+        function fillMap(map, brightnessArray) {
             for (let r = 0; r < map.length; r++) {
                 for (let c = 0; c <= r; c++) {
                     if (map[r][c].on) {
-                        map[r][c].color = [110, 150, 190][Math.floor(Math.random()*3)];
+                        map[r][c].brightness = brightnessArray[Math.floor(Math.random() * brightnessArray.length)];
                     }
                 }
             }
         }
 
-        function fillGreen(map, variant) {
-            const levels = [100, 140, 180, 210, 240];
-            for (let r = 0; r < map.length; r++) {
-                for (let c = 0; c <= r; c++) {
-                    if (map[r][c].on) {
-                        map[r][c].color = levels[(variant * 2 + Math.floor(Math.random()*2)) % levels.length];
-                        map[r][c].pat = variant === 0 ? 'solid' : (variant === 1 ? 'star' : 'thin');
-                    }
-                }
-            }
-        }
+        function renderOctant(map, grid, cellSize) {
+            const raster = new Uint8Array(SIZE * SIZE);
+            const center = Math.floor(grid / 2);
 
-        function renderRed(map, moduleCount) {
-            const raster = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE);
-            const pxSize = CANVAS_SIZE / (moduleCount * SUB);
-            const center = Math.floor(moduleCount / 2);
+            for (let y = 0; y < grid; y++) {
+                for (let x = 0; x < grid; x++) {
+                    // Перетворюємо в октант
+                    const absX = Math.abs(x - center);
+                    const absY = Math.abs(y - center);
+                    const srcY = Math.max(absX, absY);
+                    const srcX = Math.min(absX, absY);
 
-            for (let mr = 0; mr < moduleCount; mr++) {
-                for (let mc = 0; mc < moduleCount; mc++) {
-                    const srcR = Math.max(Math.abs(mr - center), Math.abs(mc - center));
-                    const srcC = Math.min(Math.abs(mr - center), Math.abs(mc - center));
-
-                    const cell = map[srcR]?.[srcC];
+                    const cell = map[srcY]?.[srcX];
                     if (!cell || !cell.on) continue;
 
-                    const color = cell.color;
-                    const flipX = mc < center;
-                    const flipY = mr < center;
+                    const startX = Math.floor(x * cellSize);
+                    const startY = Math.floor(y * cellSize);
+                    const endX = Math.floor(startX + cellSize);
+                    const endY = Math.floor(startY + cellSize);
 
-                    for (let sy = 0; sy < SUB; sy++) {
-                        for (let sx = 0; sx < SUB; sx++) {
-                            let px = sx;
-                            let py = sy;
-                            if (flipX) px = SUB - 1 - px;
-                            if (flipY) py = SUB - 1 - py;
-
-                            const x = Math.floor((mc * SUB + px) * pxSize);
-                            const y = Math.floor((mr * SUB + py) * pxSize);
-
-                            fillBlock(raster, x, y, pxSize, color);
+                    for (let py = startY; py < endY; py++) {
+                        for (let px = startX; px < endX; px++) {
+                            if (px < SIZE && py < SIZE) {
+                                raster[py * SIZE + px] = cell.brightness;
+                            }
                         }
                     }
                 }
             }
             return raster;
-        }
-
-        function renderGreen(layers, moduleCount) {
-            const raster = new Uint8Array(CANVAS_SIZE * CANVAS_SIZE);
-            const pxSize = CANVAS_SIZE / (moduleCount * SUB);
-            const center = Math.floor(moduleCount / 2);
-
-            layers.forEach((map, idx) => {
-                for (let mr = 0; mr < moduleCount; mr++) {
-                    for (let mc = 0; mc < moduleCount; mc++) {
-                        const srcR = Math.max(Math.abs(mr - center), Math.abs(mc - center));
-                        const srcC = Math.min(Math.abs(mr - center), Math.abs(mc - center));
-
-                        const cell = map[srcR]?.[srcC];
-                        if (!cell || !cell.on) continue;
-
-                        const pat = PATS[cell.pat] || PATS.solid;
-                        const flipX = mc < center;
-                        const flipY = mr < center;
-                        const transpose = Math.abs(mr - center) < Math.abs(mc - center);
-
-                        for (let i = 0; i < 49; i++) {
-                            if (pat[i] === 0) continue;
-
-                            let pr = Math.floor(i / 7);
-                            let pc = i % 7;
-
-                            if (transpose) [pc, pr] = [pr, pc];
-                            if (flipY) pr = 6 - pr;
-                            if (flipX) pc = 6 - pc;
-
-                            const microX = pc % SUB;
-                            const microY = pr % SUB;
-
-                            const x = Math.floor((mc * SUB + microX) * pxSize);
-                            const y = Math.floor((mr * SUB + microY) * pxSize);
-
-                            fillBlock(raster, x, y, pxSize, cell.color);
-                        }
-                    }
-                }
-            });
-            return raster;
-        }
-
-        function fillBlock(raster, x, y, size, color) {
-            const x1 = Math.floor(x);
-            const y1 = Math.floor(y);
-            const x2 = Math.floor(x + size);
-            const y2 = Math.floor(y + size);
-
-            for (let py = y1; py < y2 && py < CANVAS_SIZE; py++) {
-                for (let px = x1; px < x2 && px < CANVAS_SIZE; px++) {
-                    raster[py * CANVAS_SIZE + px] = color;
-                }
-            }
         }
 
         function saveImage() {
             const link = document.createElement('a');
-            link.download = 'qrnament.png';
-            link.href = canvas.toDataURL('image/png');
+            link.download = 'qrnament_3x3.png';
+            link.href = document.getElementById('canvas').toDataURL();
             link.click();
         }
 
-        // Запуск
+        // Ініціалізація
+        let ctx;
         window.onload = () => {
-            init();
+            ctx = document.getElementById('canvas').getContext('2d');
             generate();
         };
     </script>
