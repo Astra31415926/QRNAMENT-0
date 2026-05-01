@@ -146,30 +146,14 @@
 
             <div class="border-t border-zinc-800 pt-4">
                 <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_tech">⚙️ Технологія</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="m_tech_text">Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994), розподіляючи дані по кольорових каналах. Авторський підхід дозволяє зробити коди придатними для фізичного носія (друк).</p>
-            </div>
-
-            <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_author">🎨 Автор</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="m_author_text">Михайло Кашкаров — science-art художник (оптика, спектральний дизайн).</p>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="m_tech_text">Кольорові 2D-коди розширюють класичний QR-код, розподіляючи дані по кольорових каналах.</p>
             </div>
             
-            <div class="border-t border-zinc-800 pt-4">
+             <div class="border-t border-zinc-800 pt-4">
                 <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_science">📚 Наукова база</h3>
                 <div class="flex flex-col gap-2 text-xs text-blue-400 underline">
                     <a href="https://zenodo.org/records/18895764" target="_blank">Zenodo Research</a>
-                    <a href="https://medium.com/@Bakminsterfuler/sci-universal-model-905efe92e766" target="_blank">Medium Article</a>
-                    <a href="https://telegra.ph/White-Paper-SCI-Encoding-02-22" target="_blank">White Paper (UA)</a>
-                    <a href="https://telegra.ph/RSS-Reflectance-Synchronized-System-02-19" target="_blank">RSS System</a>
                 </div>
-            </div>
-
-            <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_contacts">📩 Контакти</h3>
-                <p class="text-zinc-500 leading-relaxed text-xs">
-                    Email: <a href="mailto:bakminsterfuler@gmail.com" class="text-zinc-400">bakminsterfuler@gmail.com</a><br>
-                    Портфоліо: <a href="https://astra31415926.github.io/" target="_blank" class="text-blue-400">astra31415926.github.io</a>
-                </p>
             </div>
         </div>
     </div>
@@ -185,7 +169,6 @@
 
     <!-- Controls -->
     <div class="mb-4 relative">
-        <!-- Added data-i18n-placeholder logic handled in JS, default UA text here -->
         <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 neon-text-glow pr-12" placeholder="Введіть текст..."></textarea>
         <button onclick="App.clearText()" class="absolute right-3 top-3 text-zinc-500 hover:text-red-500 transition-colors p-1">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
@@ -202,7 +185,6 @@
 
     <!-- Actions -->
     <div class="flex flex-col gap-3">
-        <!-- Added data-i18n attributes for buttons -->
         <button onclick="App.save()" data-i18n="btn_save" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Зберегти PNG</button>
         
         <div class="grid grid-cols-2 gap-3">
@@ -212,7 +194,6 @@
         <input type="file" id="file-input" accept="image/*" class="hidden">
     </div>
 
-    <!-- Added data-i18n for status -->
     <p id="status" data-i18n="status_ready" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Готово</p>
 
     <script>
@@ -240,9 +221,83 @@
             [0,63,32,62,2,126,0], [64,95,81,93,69,125,1], [51,51,102,102,76,76,25]
         ];
 
+        // === АЛГОРИТМИ ОБРОБКИ ЗОБРАЖЕННЯ (USER PROVIDED) ===
+
+        // Адаптивна бінаризація (метод Бредлі)
+        function applyBradleyStandard(imgData, chIdx) {
+            const w = imgData.width, h = imgData.height;
+            const input = imgData.data;
+            const output = new Uint8ClampedArray(w * h * 4);
+            const intImg = new Int32Array(w * h);
+            const s = Math.floor(w / 8), t = 15; // Розмір вікна та поріг
+
+            // Інтегральне зображення
+            for (let y = 0; y < h; y++) {
+                let sum = 0;
+                for (let x = 0; x < w; x++) {
+                    sum += input[(y * w + x) * 4 + chIdx];
+                    intImg[y * w + x] = (y > 0 ? intImg[(y - 1) * w + x] : 0) + sum;
+                }
+            }
+
+            // Бінаризація пікселів
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const x1 = Math.max(x - s, 0), x2 = Math.min(x + s, w - 1);
+                    const y1 = Math.max(y - s, 0), y2 = Math.min(y + s, h - 1);
+                    const count = (x2 - x1) * (y2 - y1);
+                    const sum = intImg[y2 * w + x2] - intImg[y1 * w + x2] - intImg[y2 * w + x1] + intImg[y1 * w + x1];
+                    const val = input[(y * w + x) * 4 + chIdx];
+                    const res = (val * count < sum * (100 - t) / 100) ? 0 : 255;
+                    const idx = (y * w + x) * 4;
+                    output[idx] = output[idx+1] = output[idx+2] = res; output[idx+3] = 255;
+                }
+            }
+            return new ImageData(output, w, h);
+        }
+
+        // SCI Model: Виділення конкретного кольорового каналу з компенсацією перешкод
+        function applySCIMath(imgData, ch, cfg) {
+            const d = imgData.data;
+            for (let i = 0; i < d.length; i += 4) {
+                let r = d[i], g = d[i+1], b = d[i+2];
+                let target, n1, n2;
+                
+                // Вибір цільового каналу та сусідніх (only B matters here)
+                if (ch === 'R') { target = r; n1 = g; n2 = b; }
+                else if (ch === 'G') { target = g; n1 = r; n2 = b; }
+                else { target = b; n1 = r; n2 = g; }
+
+                // Математична формула виділення
+                let res = (target - (n1 * cfg.k1 + n2 * cfg.k2)) * cfg.gain + cfg.offset;
+                res = Math.max(0, Math.min(255, res));
+                d[i] = res; d[i+1] = res; d[i+2] = res; d[i+3] = 255;
+            }
+        }
+
+        // Допоміжна функція для осциляції параметрів у режимі Active Search
+        function getOscParam(t, period, min, max) {
+            const cycle = t % period;
+            const half = period / 2;
+            const pos = (cycle < half) ? cycle / half : (period - cycle) / half;
+            return min + pos * (max - min);
+        }
+
         // --- 2. APP MODULE ---
         const App = {
-            state: { lang: 'ua', frozen: false, isScanning: false },
+            state: { 
+                lang: 'ua', 
+                frozen: false, 
+                isScanning: false,
+                // Scanner State Integration
+                standardFailCount: 0,
+                activeSearch: false,
+                time: 0,
+                AUTO_TRIGGER_THRESHOLD: 15, // Поріг переходу в Active Search
+                config: {
+                    B: { k1: 0.5, k2: 0.5, gain: 1.5, offset: 0 } // Base config for Blue
+                }
+            },
             els: {},
 
             init() {
@@ -272,52 +327,39 @@
             clearText() {
                 this.els.input.value = "";
                 this.clearCanvas();
-                this.updateStatus("Cleared"); // Using status key logic would be complex here, simple text ok
+                this.updateStatus("Cleared");
                 AudioEngine.playClick();
             },
 
             toggleMenu() { this.els.menu.classList.toggle('open'); },
 
-            // --- UPDATED: i18n Logic ---
+            // --- i18n Logic ---
             setLang(lang) {
                 this.state.lang = lang;
-                
-                // Visual toggle for buttons
                 document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
                 document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
                 document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
                 document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
                 
-                // Dictionary
                 const i18n = {
-                    // Menu Items
-                    m_usage: { ua: "📱 Як користуватися", en: "📱 How to use" },
-                    m_usage_text: { ua: "Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.", en: "Create spectral 2D codes. Test decoding from screens or images." },
-                    m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
-                    m_tech_text: { ua: "Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994), розподіляючи дані по кольорових каналах.", en: "Color 2D codes expand classic QR (Denso Wave, 1994) by distributing data across channels." },
-                    m_author: { ua: "🎨 Автор", en: "🎨 Author" },
-                    m_author_text: { ua: "Михайло Кашкаров — science-art художник (оптика, спектральний дизайн).", en: "Mykhailo Kashkarov — science-art artist (optics, spectral design)." },
-                    m_science: { ua: "📚 Наукова база", en: "📚 Science Base" },
-                    m_contacts: { ua: "📩 Контакти", en: "📩 Contacts" },
-                    
-                    // UI Elements (New)
                     main_placeholder: { ua: "Введіть текст...", en: "Type to generate..." },
                     btn_save: { ua: "Зберегти PNG", en: "Save PNG" },
                     btn_cam: { ua: "Сканувати камерою", en: "Cam Scan" },
                     btn_file: { ua: "З файлу", en: "File Scan" },
-                    status_ready: { ua: "Готово", en: "Ready" }
+                    status_ready: { ua: "Готово", en: "Ready" },
+                    m_usage: { ua: "📱 Як користуватися", en: "📱 How to use" },
+                    m_usage_text: { ua: "Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.", en: "Create spectral 2D codes. Test decoding from screens or images." },
+                    m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
+                    m_tech_text: { ua: "Кольорові 2D-коди розширюють класичний QR-код, розподіляючи дані по кольорових каналах.", en: "Color 2D codes expand classic QR by distributing data across channels." },
+                    m_science: { ua: "📚 Наукова база", en: "📚 Science Base" }
                 };
 
-                // Apply translations to textContent
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
                     if(i18n[key]) el.textContent = i18n[key][lang];
                 });
 
-                // Apply specific logic for placeholder
-                if (i18n.main_placeholder) {
-                    this.els.input.placeholder = i18n.main_placeholder[lang];
-                }
+                if (i18n.main_placeholder) this.els.input.placeholder = i18n.main_placeholder[lang];
             },
 
             generate() {
@@ -389,7 +431,6 @@
                                 if ((pattern[sY] >> (6 - sX)) & 1) {
                                     let xRel = (bx * 7) + px - 3;
                                     let yRel = (by * 7) + py - 3;
-
                                     if (xRel >= yRel && yRel >= 0) {
                                         octantMap.set(`${xRel},${yRel}`, true);
                                     }
@@ -412,13 +453,11 @@
                     points.forEach(([px, py]) => {
                         const absX = center + px;
                         const absY = center + py;
-                        
                         if (absX >= 0 && absX < size && absY >= 0 && absY < size) {
                             grid[absY][absX] = 1;
                         }
                     });
                 });
-
                 return grid;
             },
 
@@ -432,11 +471,17 @@
                 }
             },
 
-            // --- SCANNER & RITUAL LOGIC ---
+            // === SCANNER LOGIC (INTEGRATED USER FRAGMENT) ===
 
             startCamera() {
                 if(this.state.isScanning) return;
+                
+                // Reset state for new scan
                 this.state.isScanning = true;
+                this.state.standardFailCount = 0;
+                this.state.activeSearch = false;
+                this.state.time = 0;
+                
                 this.updateStatus("Accessing Camera...");
 
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
@@ -444,9 +489,9 @@
                         this.els.video.srcObject = stream;
                         this.els.video.style.display = 'block';
                         this.els.video.play();
-                        this.updateStatus("Scanning...");
+                        this.updateStatus("Scanning Blue...");
                         AudioEngine.startScanAtmosphere();
-                        this.scanLoop();
+                        this.processLoop(); // Start the custom loop
                     })
                     .catch(err => { alert("Camera Error: " + err.message); this.stopCamera(); });
             },
@@ -459,37 +504,102 @@
                 this.els.scanLine.style.display = 'none';
             },
 
-            scanLoop() {
+            processLoop() {
                 if (!this.state.isScanning) return;
-                const video = this.els.video;
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    const result = this.processFrame(video, video.videoWidth, video.videoHeight);
-                    if (result) {
-                        this.captureFrame(video, video.videoWidth, video.videoHeight);
-                        this.stopCamera();
-                        this.performRitual(result);
-                        return;
+
+                let sourceCopy = null;
+                // Get frame from video
+                if (this.els.video.readyState === this.els.video.HAVE_ENOUGH_DATA) {
+                    this.els.ctx.drawImage(this.els.video, 0, 0, 1024, 1024);
+                    sourceCopy = this.els.ctx.getImageData(0, 0, 1024, 1024);
+                }
+
+                if (sourceCopy) {
+                    // Standard -> Active Search Switch
+                    if (this.state.standardFailCount > this.state.AUTO_TRIGGER_THRESHOLD) {
+                        if (!this.state.activeSearch) {
+                            this.state.activeSearch = true;
+                            console.log("Switching to Active Search");
+                            this.updateStatus("Active Search: B");
+                        }
+                    }
+
+                    // We only process 'B' (Blue) channel as requested
+                    const ch = 'B'; 
+                    const idx = 2; // Blue channel index
+                    const baseCfg = this.state.config[ch];
+                    let foundInFrame = false;
+
+                    if (this.state.activeSearch) {
+                        // --- ACTIVE SEARCH MODE (SCI) ---
+                        this.state.time++; 
+                        
+                        // Dynamic parameters for difficult cases
+                        const gain = getOscParam(this.state.time, 100, 0.5, 3.5);
+                        const offset = getOscParam(this.state.time, 250, -80, 0);
+                        const cfg = { ...baseCfg, gain, offset };
+
+                        let workData = new ImageData(new Uint8ClampedArray(sourceCopy.data), 1024, 1024);
+                        applySCIMath(workData, ch, cfg);
+                        let mono = applyBradleyStandard(workData, 0); // 0 because SCI creates grayscale
+                        
+                        const code = jsQR(mono.data, 1024, 1024, { inversionAttempts: "attemptBoth" });
+                        
+                        if (code) {
+                            this.lockChannel(ch, code.data);
+                            foundInFrame = true;
+                        }
+                        
+                        // Display processed channel on screen
+                        if (!foundInFrame) this.els.ctx.putImageData(workData, 0, 0);
+
+                    } else {
+                        // --- STANDARD MODE ---
+                        this.state.standardFailCount++;
+                        
+                        // Simple binarization of specific channel
+                        let mono = applyBradleyStandard(sourceCopy, idx);
+                        const code = jsQR(mono.data, 1024, 1024, { inversionAttempts: "attemptBoth" });
+                        
+                        if (code) {
+                            this.lockChannel(ch, code.data);
+                            foundInFrame = true;
+                            this.state.standardFailCount = 0; 
+                        }
+                        
+                        if (!foundInFrame) this.els.ctx.putImageData(mono, 0, 0);
                     }
                 }
-                requestAnimationFrame(() => this.scanLoop());
+
+                requestAnimationFrame(() => this.processLoop());
             },
 
-            processFrame(source, w, h) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 1024; canvas.height = 1024;
-                const ctx = canvas.getContext('2d');
-                const aspect = w / h;
-                let sx = 0, sy = 0, sw = w, sh = h;
-                if (aspect > 1) { sw = h; sx = (w - sw) / 2; }
-                else { sh = w; sy = (h - sh) / 2; }
-                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
-                const imageData = ctx.getImageData(0, 0, 1024, 1024);
-                const data = imageData.data;
-                for (let i = 0; i < data.length; i += 4) {
-                    const b = data[i+2];
-                    data[i] = b; data[i+1] = b; data[i+2] = b;
+            // Adapted lockChannel for single input
+            lockChannel(ch, data) {
+                // We found the Blue channel data
+                this.state.frozen = true;
+                
+                // Feedback
+                AudioEngine.playResult(true);
+                this.flashScreen();
+                
+                // Input Data
+                try { 
+                    this.els.input.value = decodeURIComponent(escape(data)); 
+                } catch(e) { 
+                    this.els.input.value = data; 
                 }
-                return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
+                
+                this.updateStatus("Decoded Blue!");
+                
+                // Visuals
+                this.stopCamera();
+                this.performRitual({ data: data }); // Use existing ritual for visuals
+            },
+
+            flashScreen() {
+                this.els.flash.style.opacity = '1';
+                setTimeout(() => { this.els.flash.style.opacity = '0'; }, 150);
             },
 
             captureFrame(source, w, h) {
@@ -502,9 +612,7 @@
             },
 
             performRitual(code) {
-                this.state.isScanning = true;
-                AudioEngine.playScan();
-                
+                // Simplified ritual for after-decoding visual feedback
                 const line = this.els.scanLine;
                 line.style.display = 'block';
                 line.style.animation = 'pulse 1.5s infinite';
@@ -513,27 +621,13 @@
                 void line.offsetHeight;
                 line.style.transition = 'top 2.5s linear';
                 line.style.top = '100%';
-                this.updateStatus("Analyzing...");
 
                 setTimeout(() => {
-                    this.els.flash.style.opacity = '1';
-                    AudioEngine.playResult(!!code);
-                    setTimeout(() => {
-                        this.els.flash.style.opacity = '0';
-                        line.style.animation = 'none';
-                        if (code) {
-                            try { this.els.input.value = decodeURIComponent(escape(code.data)); } catch(e) { this.els.input.value = code.data; }
-                            this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
-                            this.els.ctx.fillRect(0, 0, 1024, 1024);
-                            this.updateStatus("Decoded!");
-                            this.state.frozen = true;
-                        } else {
-                            this.updateStatus("No Data Found");
-                            this.clearCanvas();
-                        }
-                        this.state.isScanning = false;
-                        line.style.display = 'none';
-                    }, 150);
+                   line.style.display = 'none';
+                   line.style.animation = 'none';
+                   // Freeze result on canvas with overlay
+                   this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
+                   this.els.ctx.fillRect(0, 0, 1024, 1024);
                 }, 2500);
             },
 
@@ -545,10 +639,17 @@
                     const img = new Image();
                     img.onload = () => {
                         this.captureFrame(img, img.width, img.height);
-                        const result = this.processFrame(img, img.width, img.height);
-                        this.state.isScanning = true;
-                        AudioEngine.playScan();
-                        this.performRitual(result);
+                        // Use Standard Scan for file
+                        let sourceData = this.els.ctx.getImageData(0, 0, 1024, 1024);
+                        let mono = applyBradleyStandard(sourceData, 2); // Blue
+                        const result = jsQR(mono.data, 1024, 1024, { inversionAttempts: "attemptBoth" });
+                        
+                        if (result) {
+                            this.lockChannel('B', result.data);
+                        } else {
+                            this.updateStatus("No Data in Blue");
+                            AudioEngine.playResult(false);
+                        }
                     };
                     img.src = evt.target.result;
                 };
@@ -568,7 +669,7 @@
             }
         };
 
-        // --- AUDIO ENGINE v4.5 (Fixed) ---
+        // --- AUDIO ENGINE v4.5 ---
         const AudioEngine = {
             ctx: null, scanNodes: [], initialized: false,
             init() {
@@ -585,23 +686,6 @@
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                 osc.connect(gain); gain.connect(this.ctx.destination);
                 osc.start(now); osc.stop(now + 0.05);
-            },
-            playScan() {
-                if(!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, now);
-                osc.frequency.exponentialRampToValueAtTime(1000, now + 2.5);
-
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.001, now);
-                gain.gain.linearRampToValueAtTime(0.05, now + 0.2);
-                gain.gain.setValueAtTime(0.05, now + 2.0);
-                gain.gain.linearRampToValueAtTime(0, now + 2.5);
-
-                osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(now); osc.stop(now + 2.6);
             },
             startScanAtmosphere() {
                 this.init(); this.stopAll();
