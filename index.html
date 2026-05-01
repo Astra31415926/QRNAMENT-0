@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <!-- PWA Meta Tags -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <meta name="theme-color" content="#000000">
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050505">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
     <title>QRnament v3.1 // Spectral 7x7 Mandala</title>
     
     <!-- Libraries -->
@@ -16,188 +15,203 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
     <style>
-        body { 
-            background: #000; 
-            color: #fff; 
-            font-family: 'Inter', system-ui, sans-serif; 
-            overflow-x: hidden; 
+        :root {
+            --neon-green: #00ff41;
+            --b-color: #0088FF;
+            --bg-color: #000000;
         }
         
+        body { 
+            background: var(--bg-color); 
+            color: #fff; 
+            font-family: 'Inter', system-ui, sans-serif; 
+            overflow-x: hidden;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
         /* Logo Colors */
         .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
         .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
 
-        /* Canvas & Video */
-        #canvas {
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-            image-rendering: pixelated;
-        }
+        /* Screen Management */
+        .screen { display: none; flex-direction: column; min-height: 100vh; }
+        .screen.active { display: flex; }
 
-        #video {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: #000;
-            transform: scaleX(-1);
-            display: none;
-        }
-
-        /* Scan FX */
-        .scan-line { 
-            position: absolute; 
-            left: 0; right: 0; 
-            height: 4px; 
-            background: #00ff41; 
-            box-shadow: 0 0 20px #00ff41, 0 0 40px #00ff41; 
-            top: 0; 
-            z-index: 20; 
-            pointer-events: none;
-            display: none;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.6; box-shadow: 0 0 20px #00ff41; height: 2px; }
-            50% { opacity: 1; box-shadow: 0 0 40px #00ff41, 0 0 10px #fff; height: 6px; }
-            100% { opacity: 0.6; box-shadow: 0 0 20px #00ff41; height: 2px; }
-        }
-
-        /* Flash Effect */
-        .flash-overlay {
-            position: absolute; 
-            inset: 0; 
-            background: white; 
-            opacity: 0; 
-            pointer-events: none; 
-            z-index: 30;
-            transition: opacity 0.1s;
-        }
-
-        /* Menu Overlay */
-        .menu-overlay {
-            position: fixed; 
-            inset: 0; 
-            background: rgba(0,0,0,0.98);
-            z-index: 100; 
-            transform: translateX(100%);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex; 
-            flex-direction: column; 
-            padding: 2rem;
-            overflow-y: auto;
-        }
-        .menu-overlay.open { transform: translateX(0); }
-
-        /* UI Elements */
-        .btn-active:active { transform: scale(0.96); }
-
-        .neon-btn-green {
-            background: rgba(0, 255, 65, 0.05);
-            border: 1px solid #00ff41;
-            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 255, 65, 0.05);
-            text-shadow: 0 0 5px #00ff41;
-            transition: all 0.2s;
-        }
-        .neon-btn-green:hover { box-shadow: 0 0 20px #00ff41, inset 0 0 30px rgba(0, 255, 65, 0.1); }
-
-        .neon-text-glow {
-            border: 1px solid #00ff41;
-            box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+        /* Inputs */
+        textarea {
+            background: rgba(10, 10, 10, 0.8);
+            border: 2px solid rgba(255,255,255,0.1);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            resize: none;
             transition: all 0.3s;
         }
-        .neon-text-glow:focus {
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
-            border-color: #fff;
+        textarea:focus { 
+            outline: none; 
+            border-color: var(--b-color);
+            background: rgba(20, 20, 20, 0.9);
         }
+        
+        /* Buttons */
+        .btn-primary {
+            position: relative;
+            overflow: hidden;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+        }
+        .btn-create {
+            background: linear-gradient(135deg, #F97316, #EA580C);
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+        }
+        .btn-scan-ui {
+            background: linear-gradient(135deg, #14B8A6, #0D9488);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-secondary:active { background: rgba(255,255,255,0.1); }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: #00ff41; }
+        /* Viewfinder */
+        .viewfinder-corners {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 15;
+            transition: all 0.3s;
+        }
+        .corner {
+            position: absolute;
+            width: 20px; height: 20px;
+            border-color: rgba(255,255,255,0.3);
+            transition: all 0.3s;
+        }
+        .tl { top: 0; left: 0; border-top: 3px solid; border-left: 3px solid; }
+        .tr { top: 0; right: 0; border-top: 3px solid; border-right: 3px solid; }
+        .bl { bottom: 0; left: 0; border-bottom: 3px solid; border-left: 3px solid; }
+        .br { bottom: 0; right: 0; border-bottom: 3px solid; border-right: 3px solid; }
+        
+        .viewfinder-hunting .corner { 
+            border-color: var(--neon-green); 
+            box-shadow: 0 0 8px var(--neon-green);
+            animation: pulse 1.5s infinite alternate; 
+        }
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Effects */
+        @keyframes flash { 0% { opacity: 0; } 20% { opacity: 0.8; } 100% { opacity: 0; } }
+        .flash-anim { animation: flash 0.3s ease-out; }
     </style>
 </head>
-<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
+<body class="p-4 pb-6">
 
-    <!-- Menu Overlay -->
-    <div id="menu-overlay" class="menu-overlay">
-        <div class="flex justify-between items-center mb-8">
-            <div class="flex gap-2 bg-zinc-800 p-1 rounded-lg border border-white/10">
-                <button onclick="App.setLang('ua')" id="btn-lang-ua" class="text-xs font-bold px-3 py-1 rounded transition-colors">UA</button>
-                <button onclick="App.setLang('en')" id="btn-lang-en" class="text-xs font-bold px-3 py-1 rounded transition-colors text-zinc-500">EN</button>
+    <!-- GLOBAL ASSETS -->
+    <input type="file" id="file-input" accept="image/*" class="hidden">
+    
+    <!-- ===================== SCREEN: HOME ===================== -->
+    <div id="screen-home" class="screen active">
+        <header class="flex items-center justify-center relative z-50 h-20 mb-4">
+            <h1 class="text-3xl font-black tracking-tighter uppercase absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
+            </h1>
+        </header>
+
+        <main class="flex-1 flex flex-col items-center justify-center px-2 pb-10 text-center">
+            <div class="text-base text-zinc-300 mb-10 leading-relaxed max-w-md bg-zinc-900/30 p-6 rounded-2xl border border-white/5">
+                <p class="font-bold text-white mb-4 text-lg">Орнаментальні QR-коди</p>
+                <p class="mb-4">
+                    Генерація та сканування спектральних кодів. Дані кодуються в синьому каналі, орнамент — у червоному та зеленому.
+                </p>
+                <p class="text-zinc-400">
+                    Використовує алгоритми адаптивної бінаризації та SCI-модель для зчитування.
+                </p>
             </div>
-            <button onclick="App.toggleMenu()" class="text-3xl text-zinc-500 hover:text-white">&times;</button>
-        </div>
+
+            <div class="w-full max-w-xs space-y-4 mt-auto">
+                <button onclick="switchScreen('create')" class="w-full py-4 btn-primary btn-create text-white rounded-2xl text-sm uppercase">
+                    [+] Створити
+                </button>
+                <button onclick="switchScreen('scan')" class="w-full py-4 btn-primary btn-scan-ui rounded-2xl text-sm uppercase">
+                    [🔍] Сканувати
+                </button>
+            </div>
+        </main>
         
-        <div class="space-y-6 text-sm">
-            <div>
-                <h2 class="text-xl font-black mb-2 flex items-center gap-2">
-                    <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
-                </h2>
-                <p class="text-neonGreen opacity-70">v3.1 // Spectral Mandala</p>
-            </div>
+        <footer class="p-4 text-center">
+             <p class="text-xs text-zinc-700">© 2026 Mykhailo Kashkarov | Science Artist</p>
+        </footer>
+    </div>
 
-            <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_usage">📱 Як користуватися</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="m_usage_text">Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.</p>
+    <!-- ===================== SCREEN: CREATE ===================== -->
+    <div id="screen-create" class="screen">
+        <header class="flex items-center p-4 border-b border-white/10 relative z-20 h-16">
+            <button onclick="hardReset()" class="text-2xl z-10 px-2 mr-2 text-zinc-400 hover:text-white">←</button>
+            <div class="flex-1 text-center">
+                <h1 class="text-xl font-black tracking-tighter">Створення</h1>
             </div>
+            <div class="w-10 h-10"></div>
+        </header>
 
-            <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_tech">⚙️ Технологія</h3>
-                <p class="text-zinc-500 leading-relaxed" data-i18n="m_tech_text">Кольорові 2D-коди розширюють класичний QR-код, розподіляючи дані по кольорових каналах.</p>
+        <div class="p-4 space-y-2 flex-shrink-0">
+            <div class="relative">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-full"></div>
+                <textarea id="b-text" class="w-full p-3 pl-4 rounded-xl outline-none h-12 text-sm font-medium" placeholder="BLUE CHANNEL DATA"></textarea>
             </div>
-            
-             <div class="border-t border-zinc-800 pt-4">
-                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="m_science">📚 Наукова база</h3>
-                <div class="flex flex-col gap-2 text-xs text-blue-400 underline">
-                    <a href="https://zenodo.org/records/18895764" target="_blank">Zenodo Research</a>
-                </div>
-            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center justify-center p-4 relative">
+             <div id="container-create" class="relative w-full max-w-xs aspect-square bg-zinc-950 rounded-3xl p-4 border border-white/5 shadow-2xl overflow-hidden flex items-center justify-center">
+                 <!-- Canvas injected here -->
+             </div>
+        </div>
+
+        <div class="p-4 flex-shrink-0">
+            <button id="save-btn" onclick="saveQR()" class="w-full py-4 bg-white text-black font-bold rounded-2xl hidden active:scale-95 text-sm tracking-widest uppercase shadow-lg shadow-white/20">Зберегти PNG</button>
         </div>
     </div>
 
-    <header class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-black tracking-tighter uppercase">
-            <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
-        </h1>
-        <button onclick="App.toggleMenu()" class="text-white text-xl p-2 border border-white/10 rounded-lg hover:bg-white/10 transition-colors neon-border-btn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-        </button>
-    </header>
+    <!-- ===================== SCREEN: SCAN ===================== -->
+    <div id="screen-scan" class="screen">
+        <header class="flex items-center p-4 border-b border-white/10 relative z-20 h-16">
+            <button onclick="hardReset()" class="text-2xl z-10 px-2 mr-2 text-zinc-400 hover:text-white">←</button>
+            <div class="flex-1 text-center">
+                <h1 class="text-xl font-black tracking-tighter">Сканування</h1>
+            </div>
+            <div class="w-10 h-10"></div>
+        </header>
 
-    <!-- Controls -->
-    <div class="mb-4 relative">
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 neon-text-glow pr-12" placeholder="Введіть текст..."></textarea>
-        <button onclick="App.clearText()" class="absolute right-3 top-3 text-zinc-500 hover:text-red-500 transition-colors p-1">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-        </button>
-    </div>
-
-    <!-- Display Container -->
-    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
-        <canvas id="canvas" width="1024" height="1024"></canvas>
-        <video id="video" playsinline></video>
-        <div id="scan-line" class="scan-line"></div>
-        <div id="flash-layer" class="flash-overlay"></div>
-    </div>
-
-    <!-- Actions -->
-    <div class="flex flex-col gap-3">
-        <button onclick="App.save()" data-i18n="btn_save" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Зберегти PNG</button>
-        
-        <div class="grid grid-cols-2 gap-3">
-            <button onclick="App.startCamera()" data-i18n="btn_cam" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Сканувати камерою</button>
-            <button onclick="document.getElementById('file-input').click()" data-i18n="btn_file" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">З файлу</button>
+        <div class="p-4 space-y-2 flex-shrink-0">
+            <div class="relative">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-full"></div>
+                <textarea id="b-text-scan" class="w-full p-3 pl-4 rounded-xl outline-none h-12 text-sm font-medium" placeholder="BLUE CHANNEL RESULT" readonly></textarea>
+            </div>
         </div>
-        <input type="file" id="file-input" accept="image/*" class="hidden">
+
+        <div class="flex-1 flex flex-col items-center justify-center p-4 relative">
+             <div id="container-scan" class="relative w-full max-w-xs aspect-square bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden flex items-center justify-center">
+                 <!-- Video/Canvas injected here -->
+             </div>
+        </div>
+
+        <div class="p-6 space-y-4 flex-shrink-0">
+            <button onclick="startCamera()" class="w-full py-4 btn-secondary text-white font-bold rounded-2xl active:scale-95 text-sm tracking-widest uppercase flex items-center justify-center gap-2">
+                <span>📸 Камера</span>
+            </button>
+            <button onclick="document.getElementById('file-input').click()" class="w-full py-4 btn-secondary text-white font-bold rounded-2xl active:scale-95 text-sm tracking-widest uppercase flex items-center justify-center gap-2">
+                <span>🖼️ Галерея</span>
+            </button>
+        </div>
     </div>
 
-    <p id="status" data-i18n="status_ready" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Готово</p>
+    <!-- FLASH LAYER -->
+    <div id="flash-layer" class="fixed inset-0 bg-white opacity-0 pointer-events-none z-[200]"></div>
 
     <script>
-        // --- 1. SPRITE LIBRARY 7x7 (60 Modules) ---
+        // === 1. SPRITE LIBRARY 7x7 (60 Modules) ===
         const SPRITE_LIB_7x7 = [
             [73,42,28,127,28,42,73], [127,65,93,85,93,65,127], [85,62,99,42,99,62,85],
             [42,119,34,73,34,119,42], [28,42,73,119,73,42,28], [0,62,34,42,46,32,63],
@@ -221,17 +235,67 @@
             [0,63,32,62,2,126,0], [64,95,81,93,69,125,1], [51,51,102,102,76,76,25]
         ];
 
-        // === АЛГОРИТМИ ОБРОБКИ ЗОБРАЖЕННЯ (USER PROVIDED) ===
+        // === 2. STATE & CONFIG (INTEGRATED) ===
+        const state = {
+            scanning: false,
+            locked: { b: false },
+            results: { b: null },
+            
+            // Hybrid Logic
+            activeSearch: false,
+            standardFailCount: 0,
+            AUTO_TRIGGER_THRESHOLD: 45,
+            time: 0,
+            
+            config: {
+                // Blue Channel SCI Config
+                B: { k1: 0.05, k2: 0.13 }
+            }
+        };
 
-        // Адаптивна бінаризація (метод Бредлі)
+        // DOM References
+        const els = {
+            bText: document.getElementById('b-text'),
+            bTextScan: document.getElementById('b-text-scan'),
+            
+            main: document.createElement('canvas'),
+            video: document.createElement('video'),
+            freeze: document.createElement('canvas'),
+            ctx: null,
+            fCtx: null,
+            flash: document.getElementById('flash-layer'),
+            viewfinder: document.createElement('div'),
+            containers: {
+                create: document.getElementById('container-create'),
+                scan: document.getElementById('container-scan')
+            }
+        };
+
+        // Initialize Canvas & Video
+        els.main.width = 512; els.main.height = 512;
+        els.freeze.width = 512; els.freeze.height = 512;
+        els.main.className = "w-full h-full transition-all duration-500 relative z-10";
+        els.video.className = "absolute inset-0 w-full h-full object-cover hidden z-10";
+        els.video.setAttribute('playsinline', '');
+        els.freeze.className = "absolute inset-0 w-full h-full object-cover hidden z-12";
+        
+        els.ctx = els.main.getContext('2d', { willReadFrequently: true });
+        els.fCtx = els.freeze.getContext('2d', { willReadFrequently: true });
+
+        // Viewfinder
+        els.viewfinder.className = "viewfinder-corners hidden";
+        els.viewfinder.innerHTML = `<div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>`;
+
+        // === 3. ALGORITHMS (FROM USER PROVIDED SNIPPET) ===
+
+        // Bradley Binarization
         function applyBradleyStandard(imgData, chIdx) {
             const w = imgData.width, h = imgData.height;
             const input = imgData.data;
             const output = new Uint8ClampedArray(w * h * 4);
             const intImg = new Int32Array(w * h);
-            const s = Math.floor(w / 8), t = 15; // Розмір вікна та поріг
+            const s = Math.floor(w / 8), t = 15;
 
-            // Інтегральне зображення
             for (let y = 0; y < h; y++) {
                 let sum = 0;
                 for (let x = 0; x < w; x++) {
@@ -240,7 +304,6 @@
                 }
             }
 
-            // Бінаризація пікселів
             for (let y = 0; y < h; y++) {
                 for (let x = 0; x < w; x++) {
                     const x1 = Math.max(x - s, 0), x2 = Math.min(x + s, w - 1);
@@ -256,26 +319,23 @@
             return new ImageData(output, w, h);
         }
 
-        // SCI Model: Виділення конкретного кольорового каналу з компенсацією перешкод
+        // SCI Math Model
         function applySCIMath(imgData, ch, cfg) {
             const d = imgData.data;
             for (let i = 0; i < d.length; i += 4) {
                 let r = d[i], g = d[i+1], b = d[i+2];
                 let target, n1, n2;
                 
-                // Вибір цільового каналу та сусідніх (only B matters here)
-                if (ch === 'R') { target = r; n1 = g; n2 = b; }
-                else if (ch === 'G') { target = g; n1 = r; n2 = b; }
+                // We only use Blue channel logic here
+                if (ch === 'B') { target = b; n1 = r; n2 = g; }
                 else { target = b; n1 = r; n2 = g; }
 
-                // Математична формула виділення
                 let res = (target - (n1 * cfg.k1 + n2 * cfg.k2)) * cfg.gain + cfg.offset;
                 res = Math.max(0, Math.min(255, res));
                 d[i] = res; d[i+1] = res; d[i+2] = res; d[i+3] = 255;
             }
         }
 
-        // Допоміжна функція для осциляції параметрів у режимі Active Search
         function getOscParam(t, period, min, max) {
             const cycle = t % period;
             const half = period / 2;
@@ -283,457 +343,372 @@
             return min + pos * (max - min);
         }
 
-        // --- 2. APP MODULE ---
-        const App = {
-            state: { 
-                lang: 'ua', 
-                frozen: false, 
-                isScanning: false,
-                // Scanner State Integration
-                standardFailCount: 0,
-                activeSearch: false,
-                time: 0,
-                AUTO_TRIGGER_THRESHOLD: 15, // Поріг переходу в Active Search
-                config: {
-                    B: { k1: 0.5, k2: 0.5, gain: 1.5, offset: 0 } // Base config for Blue
+        // === 4. MAIN HYBRID LOOP (BLUE CHANNEL ONLY) ===
+        function processLoop() {
+            if (!state.scanning) return;
+
+            let sourceCopy = null;
+            
+            if (els.video.classList.contains('hidden') === false && els.video.readyState === els.video.HAVE_ENOUGH_DATA) {
+                els.ctx.drawImage(els.video, 0, 0, 512, 512);
+                sourceCopy = els.ctx.getImageData(0, 0, 512, 512);
+            } else if (els.freeze.classList.contains('hidden') === false) {
+                sourceCopy = els.fCtx.getImageData(0, 0, 512, 512);
+            }
+
+            if (sourceCopy) {
+                // Auto-switch to Active Search
+                if (state.standardFailCount > state.AUTO_TRIGGER_THRESHOLD && !state.activeSearch) {
+                    state.activeSearch = true;
+                    console.log("Engaging Active Search (SCI) for Blue Channel");
                 }
-            },
-            els: {},
 
-            init() {
-                this.els = {
-                    canvas: document.getElementById('canvas'),
-                    video: document.getElementById('video'),
-                    input: document.getElementById('main-input'),
-                    status: document.getElementById('status'),
-                    scanLine: document.getElementById('scan-line'),
-                    flash: document.getElementById('flash-layer'),
-                    menu: document.getElementById('menu-overlay'),
-                    fileInput: document.getElementById('file-input')
+                // ONLY PROCESS BLUE CHANNEL
+                if (!state.locked.b) {
+                    const ch = 'B';
+                    const idx = 2; // Blue channel index
+                    const baseCfg = state.config[ch];
+                    let foundInFrame = false;
+
+                    if (state.activeSearch) {
+                        state.time++; 
+                        
+                        // Dynamic Params
+                        const gain = getOscParam(state.time, 100, 0.5, 3.5);
+                        const offset = getOscParam(state.time, 250, -80, 0);
+                        const cfg = { ...baseCfg, gain, offset };
+
+                        let workData = new ImageData(new Uint8ClampedArray(sourceCopy.data), 512, 512);
+                        applySCIMath(workData, ch, cfg);
+                        let mono = applyBradleyStandard(workData, 0);
+                        
+                        const code = jsQR(mono.data, 512, 512, { inversionAttempts: "attemptBoth" });
+                        
+                        if (code) {
+                            lockChannel(ch, code.data);
+                            foundInFrame = true;
+                        }
+                        
+                        if (!foundInFrame) els.ctx.putImageData(workData, 0, 0);
+
+                    } else {
+                        state.standardFailCount++;
+                        
+                        // Standard Mode
+                        let mono = applyBradleyStandard(sourceCopy, idx);
+                        const code = jsQR(mono.data, 512, 512, { inversionAttempts: "attemptBoth" });
+                        
+                        if (code) {
+                            lockChannel(ch, code.data);
+                            foundInFrame = true;
+                            state.standardFailCount = 0; 
+                        }
+                        
+                        if (!foundInFrame) els.ctx.putImageData(sourceCopy, 0, 0);
+                    }
+                }
+            }
+
+            requestAnimationFrame(processLoop);
+        }
+
+        // === 5. UI & ACTIONS ===
+        function lockChannel(ch, data) {
+            const key = ch.toLowerCase(); // 'b'
+            if (state.locked[key]) return;
+            
+            state.locked[key] = true;
+            state.results[key] = data;
+            
+            playBeep();
+            flashScreen();
+            
+            els.viewfinder.classList.add('viewfinder-hunting');
+            setTimeout(() => els.viewfinder.classList.remove('viewfinder-hunting'), 300);
+
+            // Fill Inputs
+            els.bTextScan.value = data;
+            els.bTextScan.classList.add('locked', 'locked-b');
+            
+            els.bText.value = data;
+            els.bText.classList.add('locked', 'locked-b');
+
+            // Logic: If found, stop and go to Create screen
+            if (state.locked.b) {
+                stopScanning();
+                switchScreen('create');
+                generateMandala();
+            }
+        }
+
+        function playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.frequency.value = 880; o.type = "sine";
+                g.gain.setValueAtTime(0.1, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+                o.start(); o.stop(ctx.currentTime + 0.15);
+            } catch(e){}
+        }
+
+        function flashScreen() {
+            els.flash.classList.add('flash-anim');
+            setTimeout(() => els.flash.classList.remove('flash-anim'), 400);
+        }
+
+        function switchScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + screenName).classList.add('active');
+            
+            const container = els.containers[screenName];
+            if (container) {
+                if (screenName === 'create') {
+                    container.appendChild(els.main);
+                    els.main.classList.remove('hidden');
+                    els.main.style.opacity = '1';
+                } else if (screenName === 'scan') {
+                    container.appendChild(els.video);
+                    container.appendChild(els.freeze);
+                    container.appendChild(els.main);
+                    container.appendChild(els.viewfinder);
+                }
+            }
+        }
+
+        async function startCamera() {
+            // Reset state
+            state.locked = {b:false};
+            state.results = {b:null};
+            state.activeSearch = false;
+            state.standardFailCount = 0;
+            
+            els.bTextScan.value = "";
+            els.bTextScan.classList.remove('locked', 'locked-b');
+            els.bText.value = "";
+            els.bText.classList.remove('locked', 'locked-b');
+
+            els.viewfinder.classList.remove('hidden');
+            els.video.classList.remove('hidden');
+            els.freeze.classList.add('hidden');
+            els.main.classList.add('hidden');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: {ideal: 1280} } });
+                els.video.srcObject = stream; 
+                els.video.play();
+
+                state.scanning = true;
+                requestAnimationFrame(processLoop);
+            } catch(e) { alert("Camera Error: " + e); }
+        }
+
+        function handleFile(e) {
+            const file = e.target.files[0]; 
+            if (!file) return;
+            
+            state.locked = {b:false};
+            state.results = {b:null};
+            state.activeSearch = false;
+            state.standardFailCount = 0;
+
+            els.bTextScan.value = "";
+            els.bTextScan.classList.remove('locked', 'locked-b');
+            els.bText.value = "";
+            els.bText.classList.remove('locked', 'locked-b');
+            
+            els.viewfinder.classList.remove('hidden');
+            
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const s = 512;
+                    els.freeze.width = s; els.freeze.height = s;
+                    const ctx = els.fCtx;
+                    
+                    const min = Math.min(img.width, img.height);
+                    ctx.drawImage(img, (img.width-min)/2, (img.height-min)/2, min, min, 0, 0, s, s);
+                    
+                    els.freeze.classList.remove('hidden');
+                    els.video.classList.add('hidden');
+                    els.main.classList.add('hidden');
+
+                    state.scanning = true;
+                    state.activeSearch = true; // Files usually need stronger processing
+                    state.standardFailCount = 100; 
+                    
+                    requestAnimationFrame(processLoop);
                 };
-                this.els.ctx = this.els.canvas.getContext('2d');
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function stopScanning() {
+            state.scanning = false;
+            if (els.video.srcObject) els.video.srcObject.getTracks().forEach(t => t.stop());
+            els.viewfinder.classList.add('hidden');
+            els.video.classList.add('hidden');
+        }
+
+        function hardReset() {
+            stopScanning();
+            
+            state.locked = {b:false};
+            state.results = {b:null};
+            state.activeSearch = false;
+            state.standardFailCount = 0;
+            state.time = 0;
+
+            els.bText.value = ""; 
+            els.bText.classList.remove('locked', 'locked-b');
+
+            els.bTextScan.value = ""; 
+            els.bTextScan.classList.remove('locked', 'locked-b');
+            
+            els.freeze.classList.add('hidden');
+            els.video.classList.add('hidden');
+            
+            els.ctx.fillStyle = "#000";
+            els.ctx.fillRect(0,0,512,512);
+            
+            document.getElementById('save-btn').classList.add('hidden');
+            
+            switchScreen('home');
+        }
+
+        // === 6. MANDALA GENERATION LOGIC ===
+        function generateMandala() {
+            const text = els.bText.value;
+            
+            els.ctx.fillStyle = "#000"; 
+            els.ctx.fillRect(0,0,512,512);
+
+            if (!text.trim()) {
+                els.main.style.opacity = 0.1;
+                document.getElementById('save-btn').classList.add('hidden');
+                return;
+            }
+            els.main.style.opacity = 1;
+            els.main.classList.remove('hidden');
+
+            try {
+                const utf8Text = unescape(encodeURIComponent(text));
+                const qr = qrcode(0, 'M');
+                qr.addData(utf8Text);
+                qr.make();
                 
-                this.els.input.addEventListener('input', () => {
-                    if (this.state.frozen) this.state.frozen = false;
-                    this.generate();
-                });
-                this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
-                document.body.addEventListener('click', () => AudioEngine.init(), { once: true });
+                const moduleCount = qr.getModuleCount();
+                const quietZone = 4;
+                const totalModules = moduleCount + quietZone * 2;
+                const modSize = 512 / totalModules;
                 
-                this.clearCanvas();
-                this.setLang('ua');
-            },
-
-            clearText() {
-                this.els.input.value = "";
-                this.clearCanvas();
-                this.updateStatus("Cleared");
-                AudioEngine.playClick();
-            },
-
-            toggleMenu() { this.els.menu.classList.toggle('open'); },
-
-            // --- i18n Logic ---
-            setLang(lang) {
-                this.state.lang = lang;
-                document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
-                document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
-                document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
-                document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
+                const gridR = build7x7Grid(totalModules);
+                const gridG = build7x7Grid(totalModules);
                 
-                const i18n = {
-                    main_placeholder: { ua: "Введіть текст...", en: "Type to generate..." },
-                    btn_save: { ua: "Зберегти PNG", en: "Save PNG" },
-                    btn_cam: { ua: "Сканувати камерою", en: "Cam Scan" },
-                    btn_file: { ua: "З файлу", en: "File Scan" },
-                    status_ready: { ua: "Готово", en: "Ready" },
-                    m_usage: { ua: "📱 Як користуватися", en: "📱 How to use" },
-                    m_usage_text: { ua: "Створюйте спектральні 2D-коди. Тестуйте зчитування з екрана або зображення.", en: "Create spectral 2D codes. Test decoding from screens or images." },
-                    m_tech: { ua: "⚙️ Технологія", en: "⚙️ Technology" },
-                    m_tech_text: { ua: "Кольорові 2D-коди розширюють класичний QR-код, розподіляючи дані по кольорових каналах.", en: "Color 2D codes expand classic QR by distributing data across channels." },
-                    m_science: { ua: "📚 Наукова база", en: "📚 Science Base" }
-                };
+                els.ctx.globalCompositeOperation = "screen";
 
-                document.querySelectorAll('[data-i18n]').forEach(el => {
-                    const key = el.getAttribute('data-i18n');
-                    if(i18n[key]) el.textContent = i18n[key][lang];
-                });
+                els.ctx.fillStyle = "#FF0000";
+                drawGrid(els.ctx, gridR, totalModules, modSize);
+                
+                els.ctx.fillStyle = "#00FF00";
+                drawGrid(els.ctx, gridG, totalModules, modSize);
 
-                if (i18n.main_placeholder) this.els.input.placeholder = i18n.main_placeholder[lang];
-            },
-
-            generate() {
-                const text = this.els.input.value;
-                if (!text) { this.clearCanvas(); this.updateStatus("Waiting..."); return; }
-
-                try {
-                    const utf8Text = unescape(encodeURIComponent(text));
-                    const qr = qrcode(0, 'M');
-                    qr.addData(utf8Text);
-                    qr.make();
-                    
-                    const moduleCount = qr.getModuleCount();
-                    const quietZone = 4;
-                    const totalModules = moduleCount + quietZone * 2;
-                    const modSize = 1024 / totalModules;
-                    
-                    const gridR = this.build7x7Grid(totalModules);
-                    const gridG = this.build7x7Grid(totalModules);
-                    
-                    const ctx = this.els.ctx;
-                    ctx.globalCompositeOperation = "source-over";
-                    ctx.fillStyle = "#000000";
-                    ctx.fillRect(0, 0, 1024, 1024);
-
-                    ctx.globalCompositeOperation = "screen";
-
-                    ctx.fillStyle = "#FF0000";
-                    this.drawGrid(ctx, gridR, totalModules, modSize);
-                    
-                    ctx.fillStyle = "#00FF00";
-                    this.drawGrid(ctx, gridG, totalModules, modSize);
-
-                    ctx.fillStyle = "#0000FF";
-                    for (let r = 0; r < moduleCount; r++) {
-                        for (let c = 0; c < moduleCount; c++) {
-                            if (qr.isDark(r, c)) {
-                                ctx.fillRect((c + quietZone) * modSize, (r + quietZone) * modSize, modSize, modSize);
-                            }
+                els.ctx.fillStyle = "#0000FF";
+                for (let r = 0; r < moduleCount; r++) {
+                    for (let c = 0; c < moduleCount; c++) {
+                        if (qr.isDark(r, c)) {
+                            els.ctx.fillRect((c + quietZone) * modSize, (r + quietZone) * modSize, modSize, modSize);
                         }
                     }
-
-                    ctx.globalCompositeOperation = "source-over";
-                    this.updateStatus("Mandala Generated");
-                } catch (e) {
-                    console.error(e);
-                    this.updateStatus("Error");
                 }
-            },
 
-            build7x7Grid(size) {
-                const grid = Array(size).fill(0).map(() => Array(size).fill(0));
-                const center = Math.floor(size / 2);
-                const octantMap = new Map(); 
-                const maxBlocks = Math.ceil((size / 2 + 7) / 7); 
+                els.ctx.globalCompositeOperation = "source-over";
+                document.getElementById('save-btn').classList.remove('hidden');
+                
+            } catch(e) {
+                console.error(e);
+            }
+        }
 
-                for (let by = 0; by < maxBlocks; by++) {
-                    for (let bx = by; bx < maxBlocks; bx++) {
-                        const patternIdx = Math.floor(Math.random() * SPRITE_LIB_7x7.length);
-                        const pattern = SPRITE_LIB_7x7[patternIdx];
-                        const flipX = Math.random() > 0.5;
-                        const flipY = Math.random() > 0.5;
+        function build7x7Grid(size) {
+            const grid = Array(size).fill(0).map(() => Array(size).fill(0));
+            const center = Math.floor(size / 2);
+            const octantMap = new Map(); 
+            const maxBlocks = Math.ceil((size / 2 + 7) / 7); 
 
-                        for (let py = 0; py < 7; py++) {
-                            for (let px = 0; px < 7; px++) {
-                                let sX = flipX ? (6 - px) : px;
-                                let sY = flipY ? (6 - py) : py;
-                                
-                                if ((pattern[sY] >> (6 - sX)) & 1) {
-                                    let xRel = (bx * 7) + px - 3;
-                                    let yRel = (by * 7) + py - 3;
-                                    if (xRel >= yRel && yRel >= 0) {
-                                        octantMap.set(`${xRel},${yRel}`, true);
-                                    }
+            for (let by = 0; by < maxBlocks; by++) {
+                for (let bx = by; bx < maxBlocks; bx++) {
+                    const patternIdx = Math.floor(Math.random() * SPRITE_LIB_7x7.length);
+                    const pattern = SPRITE_LIB_7x7[patternIdx];
+                    const flipX = Math.random() > 0.5;
+                    const flipY = Math.random() > 0.5;
+
+                    for (let py = 0; py < 7; py++) {
+                        for (let px = 0; px < 7; px++) {
+                            let sX = flipX ? (6 - px) : px;
+                            let sY = flipY ? (6 - py) : py;
+                            
+                            if ((pattern[sY] >> (6 - sX)) & 1) {
+                                let xRel = (bx * 7) + px - 3;
+                                let yRel = (by * 7) + py - 3;
+                                if (xRel >= yRel && yRel >= 0) {
+                                    octantMap.set(`${xRel},${yRel}`, true);
                                 }
                             }
                         }
                     }
                 }
+            }
 
-                octantMap.forEach((val, key) => {
-                    const [xStr, yStr] = key.split(',');
-                    const x = parseInt(xStr);
-                    const y = parseInt(yStr);
-                    
-                    const points = [
-                        [ x,  y], [ y,  x], [-x,  y], [-y,  x],
-                        [ x, -y], [ y, -x], [-x, -y], [-y, -x]
-                    ];
+            octantMap.forEach((val, key) => {
+                const [xStr, yStr] = key.split(',');
+                const x = parseInt(xStr);
+                const y = parseInt(yStr);
+                
+                const points = [
+                    [ x,  y], [ y,  x], [-x,  y], [-y,  x],
+                    [ x, -y], [ y, -x], [-x, -y], [-y, -x]
+                ];
 
-                    points.forEach(([px, py]) => {
-                        const absX = center + px;
-                        const absY = center + py;
-                        if (absX >= 0 && absX < size && absY >= 0 && absY < size) {
-                            grid[absY][absX] = 1;
-                        }
-                    });
+                points.forEach(([px, py]) => {
+                    const absX = center + px;
+                    const absY = center + py;
+                    if (absX >= 0 && absX < size && absY >= 0 && absY < size) {
+                        grid[absY][absX] = 1;
+                    }
                 });
-                return grid;
-            },
+            });
+            return grid;
+        }
 
-            drawGrid(ctx, grid, size, cellSize) {
-                for(let r=0; r<size; r++) {
-                    for(let c=0; c<size; c++) {
-                        if(grid[r][c]) {
-                            ctx.fillRect(c * cellSize, r * cellSize, cellSize + 0.5, cellSize + 0.5);
-                        }
+        function drawGrid(ctx, grid, size, cellSize) {
+            for(let r=0; r<size; r++) {
+                for(let c=0; c<size; c++) {
+                    if(grid[r][c]) {
+                        ctx.fillRect(c * cellSize, r * cellSize, cellSize + 0.5, cellSize + 0.5);
                     }
                 }
-            },
-
-            // === SCANNER LOGIC (INTEGRATED USER FRAGMENT) ===
-
-            startCamera() {
-                if(this.state.isScanning) return;
-                
-                // Reset state for new scan
-                this.state.isScanning = true;
-                this.state.standardFailCount = 0;
-                this.state.activeSearch = false;
-                this.state.time = 0;
-                
-                this.updateStatus("Accessing Camera...");
-
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                    .then(stream => {
-                        this.els.video.srcObject = stream;
-                        this.els.video.style.display = 'block';
-                        this.els.video.play();
-                        this.updateStatus("Scanning Blue...");
-                        AudioEngine.startScanAtmosphere();
-                        this.processLoop(); // Start the custom loop
-                    })
-                    .catch(err => { alert("Camera Error: " + err.message); this.stopCamera(); });
-            },
-
-            stopCamera() {
-                this.state.isScanning = false;
-                AudioEngine.stopAll();
-                if(this.els.video.srcObject) this.els.video.srcObject.getTracks().forEach(t => t.stop());
-                this.els.video.style.display = 'none';
-                this.els.scanLine.style.display = 'none';
-            },
-
-            processLoop() {
-                if (!this.state.isScanning) return;
-
-                let sourceCopy = null;
-                // Get frame from video
-                if (this.els.video.readyState === this.els.video.HAVE_ENOUGH_DATA) {
-                    this.els.ctx.drawImage(this.els.video, 0, 0, 1024, 1024);
-                    sourceCopy = this.els.ctx.getImageData(0, 0, 1024, 1024);
-                }
-
-                if (sourceCopy) {
-                    // Standard -> Active Search Switch
-                    if (this.state.standardFailCount > this.state.AUTO_TRIGGER_THRESHOLD) {
-                        if (!this.state.activeSearch) {
-                            this.state.activeSearch = true;
-                            console.log("Switching to Active Search");
-                            this.updateStatus("Active Search: B");
-                        }
-                    }
-
-                    // We only process 'B' (Blue) channel as requested
-                    const ch = 'B'; 
-                    const idx = 2; // Blue channel index
-                    const baseCfg = this.state.config[ch];
-                    let foundInFrame = false;
-
-                    if (this.state.activeSearch) {
-                        // --- ACTIVE SEARCH MODE (SCI) ---
-                        this.state.time++; 
-                        
-                        // Dynamic parameters for difficult cases
-                        const gain = getOscParam(this.state.time, 100, 0.5, 3.5);
-                        const offset = getOscParam(this.state.time, 250, -80, 0);
-                        const cfg = { ...baseCfg, gain, offset };
-
-                        let workData = new ImageData(new Uint8ClampedArray(sourceCopy.data), 1024, 1024);
-                        applySCIMath(workData, ch, cfg);
-                        let mono = applyBradleyStandard(workData, 0); // 0 because SCI creates grayscale
-                        
-                        const code = jsQR(mono.data, 1024, 1024, { inversionAttempts: "attemptBoth" });
-                        
-                        if (code) {
-                            this.lockChannel(ch, code.data);
-                            foundInFrame = true;
-                        }
-                        
-                        // Display processed channel on screen
-                        if (!foundInFrame) this.els.ctx.putImageData(workData, 0, 0);
-
-                    } else {
-                        // --- STANDARD MODE ---
-                        this.state.standardFailCount++;
-                        
-                        // Simple binarization of specific channel
-                        let mono = applyBradleyStandard(sourceCopy, idx);
-                        const code = jsQR(mono.data, 1024, 1024, { inversionAttempts: "attemptBoth" });
-                        
-                        if (code) {
-                            this.lockChannel(ch, code.data);
-                            foundInFrame = true;
-                            this.state.standardFailCount = 0; 
-                        }
-                        
-                        if (!foundInFrame) this.els.ctx.putImageData(mono, 0, 0);
-                    }
-                }
-
-                requestAnimationFrame(() => this.processLoop());
-            },
-
-            // Adapted lockChannel for single input
-            lockChannel(ch, data) {
-                // We found the Blue channel data
-                this.state.frozen = true;
-                
-                // Feedback
-                AudioEngine.playResult(true);
-                this.flashScreen();
-                
-                // Input Data
-                try { 
-                    this.els.input.value = decodeURIComponent(escape(data)); 
-                } catch(e) { 
-                    this.els.input.value = data; 
-                }
-                
-                this.updateStatus("Decoded Blue!");
-                
-                // Visuals
-                this.stopCamera();
-                this.performRitual({ data: data }); // Use existing ritual for visuals
-            },
-
-            flashScreen() {
-                this.els.flash.style.opacity = '1';
-                setTimeout(() => { this.els.flash.style.opacity = '0'; }, 150);
-            },
-
-            captureFrame(source, w, h) {
-                const ctx = this.els.ctx;
-                const aspect = w / h;
-                let sx = 0, sy = 0, sw = w, sh = h;
-                if (aspect > 1) { sw = h; sx = (w - sw) / 2; } 
-                else { sh = w; sy = (h - sh) / 2; }
-                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
-            },
-
-            performRitual(code) {
-                // Simplified ritual for after-decoding visual feedback
-                const line = this.els.scanLine;
-                line.style.display = 'block';
-                line.style.animation = 'pulse 1.5s infinite';
-                line.style.top = '0%';
-                line.style.transition = 'none';
-                void line.offsetHeight;
-                line.style.transition = 'top 2.5s linear';
-                line.style.top = '100%';
-
-                setTimeout(() => {
-                   line.style.display = 'none';
-                   line.style.animation = 'none';
-                   // Freeze result on canvas with overlay
-                   this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
-                   this.els.ctx.fillRect(0, 0, 1024, 1024);
-                }, 2500);
-            },
-
-            handleFile(e) {
-                const file = e.target.files[0];
-                if(!file) return;
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        this.captureFrame(img, img.width, img.height);
-                        // Use Standard Scan for file
-                        let sourceData = this.els.ctx.getImageData(0, 0, 1024, 1024);
-                        let mono = applyBradleyStandard(sourceData, 2); // Blue
-                        const result = jsQR(mono.data, 1024, 1024, { inversionAttempts: "attemptBoth" });
-                        
-                        if (result) {
-                            this.lockChannel('B', result.data);
-                        } else {
-                            this.updateStatus("No Data in Blue");
-                            AudioEngine.playResult(false);
-                        }
-                    };
-                    img.src = evt.target.result;
-                };
-                reader.readAsDataURL(file);
-                e.target.value = '';
-            },
-
-            // --- UTILS ---
-            clearCanvas() { this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024); },
-            updateStatus(msg) { this.els.status.innerText = msg; },
-            
-            save() {
-                const link = document.createElement('a');
-                link.download = 'qrnament-mandala.png';
-                link.href = this.els.canvas.toDataURL();
-                link.click();
             }
-        };
+        }
 
-        // --- AUDIO ENGINE v4.5 ---
-        const AudioEngine = {
-            ctx: null, scanNodes: [], initialized: false,
-            init() {
-                if(this.initialized) return;
-                try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.initialized = true; } catch(e) {}
-            },
-            playClick() {
-                this.init(); if(!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                osc.type = 'sine'; osc.frequency.value = 1200;
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-                osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(now); osc.stop(now + 0.05);
-            },
-            startScanAtmosphere() {
-                this.init(); this.stopAll();
-                const drone = this.ctx.createOscillator();
-                drone.type = 'sine'; drone.frequency.value = 40;
-                const droneGain = this.ctx.createGain(); droneGain.gain.value = 0.10;
-                drone.connect(droneGain); droneGain.connect(this.ctx.destination); drone.start();
-                this.scanNodes.push(drone);
+        function saveQR() { 
+            const a = document.createElement('a'); 
+            a.download = 'qrnament-mandala.png'; 
+            a.href = els.main.toDataURL(); 
+            a.click(); 
+        }
 
-                const beep = this.ctx.createOscillator();
-                beep.type = 'sine'; beep.frequency.value = 880;
-                const beepGain = this.ctx.createGain(); beepGain.gain.value = 0.02;
-                beep.connect(beepGain); beepGain.connect(this.ctx.destination); beep.start();
-                this.scanNodes.push(beep);
+        // === EVENT LISTENERS ===
+        document.getElementById('file-input').addEventListener('change', handleFile);
+        els.bText.addEventListener('input', generateMandala);
+        
+        // Init
+        switchScreen('home');
 
-                const toggle = () => {
-                    if(!this.scanNodes.includes(beep)) return;
-                    const now = this.ctx.currentTime;
-                    beepGain.gain.setValueAtTime(beepGain.gain.value, now);
-                    beepGain.gain.linearRampToValueAtTime(beepGain.gain.value > 0.01 ? 0.001 : 0.02, now + 0.2);
-                };
-                this.beepInterval = setInterval(toggle, 400);
-            },
-            stopAll() { if(this.beepInterval) clearInterval(this.beepInterval); this.scanNodes.forEach(n => { try { n.stop(); } catch(e) {} }); this.scanNodes = []; },
-            playResult(success) {
-                if(!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                gain.gain.setValueAtTime(0.1, now);
-                if(success) {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(2500, now);
-                    osc.frequency.exponentialRampToValueAtTime(1500, now + 0.3);
-                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
-                } else {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.linearRampToValueAtTime(50, now + 0.5);
-                    gain.gain.linearRampToValueAtTime(0, now + 0.5);
-                }
-                osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(now); osc.stop(now + 0.6);
-            }
-        };
-
-        // Initialize App
-        document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
 </html>
