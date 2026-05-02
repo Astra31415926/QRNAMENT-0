@@ -149,6 +149,7 @@
     <!-- ===================== SCREEN: CREATE ===================== -->
     <div id="screen-create" class="screen">
         <header class="flex items-center p-4 border-b border-white/10 relative z-20 h-16">
+            <!-- BACK ARROW: Returns to Home and Resets -->
             <button onclick="hardReset()" class="text-2xl z-10 px-2 mr-2 text-zinc-400 hover:text-white">←</button>
             <div class="flex-1 text-center">
                 <h1 id="t-header-create" class="text-xl font-black tracking-tighter"></h1>
@@ -169,7 +170,7 @@
              </div>
         </div>
 
-        <!-- SAVE BUTTON SECTION -->
+        <!-- SAVE BUTTON -->
         <div class="p-4 flex-shrink-0">
             <button id="btn-save" onclick="saveQR()" class="w-full py-4 bg-white text-black font-bold rounded-2xl hidden active:scale-95 text-sm tracking-widest uppercase shadow-lg shadow-white/20"></button>
         </div>
@@ -178,6 +179,7 @@
     <!-- ===================== SCREEN: SCAN ===================== -->
     <div id="screen-scan" class="screen">
         <header class="flex items-center p-4 border-b border-white/10 relative z-20 h-16">
+            <!-- BACK ARROW: Returns to Home and Resets -->
             <button onclick="hardReset()" class="text-2xl z-10 px-2 mr-2 text-zinc-400 hover:text-white">←</button>
             <div class="flex-1 text-center">
                 <h1 id="t-header-scan" class="text-xl font-black tracking-tighter"></h1>
@@ -212,8 +214,7 @@
         </div>
         <div class="p-4 text-xs space-y-3">
             <div class="text-zinc-400">
-                <!-- Updated Title with Diamond Emoji -->
-                <h3 class="font-bold text-white mb-1">🔹 Технологія друку</h3>
+                <h3 class="font-bold text-white mb-1">Технологія друку</h3>
                 <p id="t-tech-text" class="leading-relaxed"></p>
                 <a href="https://zenodo.org/records/19633526" target="_blank" class="text-blue-400 hover:underline block mt-1 text-[11px]">Zenodo: SCI Model</a>
                 <p id="t-tech-contact" class="mt-2 text-zinc-500"></p>
@@ -259,7 +260,7 @@
         // === 2. DICTIONARY (i18n) ===
         const LANG = {
             ua: {
-                // Welcome Screen (HTML content)
+                // Welcome Screen
                 welcome_html: `<p class="font-bold text-white mb-4 text-lg">Генератор і сканер орнаментальних QR-кодів.</p>
                 <p class="mb-4">Такі коди не зчитуються стандартними сканерами, але коректно зчитуються цим сканером. Це дозволяє використовувати їх як унікальні цифрові арт об’єкти.</p>`,
                 
@@ -274,8 +275,8 @@
                 t_header_create: "Створення",
                 t_header_scan: "Сканування",
                 
-                // Menu
-                t_tech_text: "Звичайний CMYK-друк не підходить для відтворення таких QR-кодів, оскільки порушує цілісність каналів і втрати даних. Коректний друк можливий лише з використанням спеціальної моделі SCI, описаної в цій технології:",
+                // Menu Text (Updated exactly as requested)
+                t_tech_text: "Звичайний CMYK-друк не підходить для відтворення таких QR-кодів, оскільки порушує цілісність каналів і втрати даних. Коректний друк можливий лише з використанням спеціальної моделі SCI, описаної в цій технології.",
                 t_tech_contact: "З питань виготовлення та друку кодів звертайтеся до автора проєкту.",
                 
                 // Placeholders
@@ -283,7 +284,7 @@
                 ph_b_scan: "Результат сканування"
             },
             en: {
-                // Welcome Screen (HTML content)
+                // Welcome Screen
                 welcome_html: `<p class="font-bold text-white mb-4 text-lg">Ornamental QR Code Generator & Scanner.</p>
                 <p class="mb-4">These codes are not readable by standard scanners, but are correctly read by this scanner. This allows using them as unique digital art objects.</p>`,
                 
@@ -298,8 +299,8 @@
                 t_header_create: "Create",
                 t_header_scan: "Scan",
                 
-                // Menu
-                t_tech_text: "Standard CMYK printing is not suitable for reproducing such QR codes, as it violates the integrity of channels and data loss. Correct printing is possible only using the special SCI model described in this technology:",
+                // Menu Text
+                t_tech_text: "Standard CMYK printing is not suitable for reproducing such QR codes, as it violates channel integrity and causes data loss. Correct printing is only possible using the special SCI model described in this technology.",
                 t_tech_contact: "For code manufacturing and printing inquiries, contact the project author.",
                 
                 // Placeholders
@@ -409,24 +410,20 @@
             const dict = LANG[lang];
             if (!dict) return;
 
-            // Update HTML content for Welcome Screen
             document.getElementById('welcome-text').innerHTML = dict.welcome_html;
 
-            // Update text content by ID
             const textKeys = ['t_header_create', 't_header_scan', 't_tech_text', 't_tech_contact'];
             textKeys.forEach(key => {
                 const el = document.getElementById(key);
                 if (el) el.textContent = dict[key];
             });
 
-            // Update Buttons
             document.getElementById('btn-create-home').textContent = dict.btn_create_home;
             document.getElementById('btn-scan-home').textContent = dict.btn_scan_home;
             document.getElementById('btn-save').textContent = dict.btn_save;
             document.getElementById('btn-cam').innerHTML = `<span>${dict.btn_cam}</span>`;
             document.getElementById('btn-file').innerHTML = `<span>${dict.btn_file}</span>`;
 
-            // Update Placeholders
             els.bText.placeholder = dict.ph_b_text;
             els.bTextScan.placeholder = dict.ph_b_scan;
         }
@@ -447,7 +444,6 @@
             if (sourceCopy) {
                 if (state.standardFailCount > state.AUTO_TRIGGER_THRESHOLD && !state.activeSearch) {
                     state.activeSearch = true;
-                    console.log("Engaging Active Search (SCI) for Blue Channel");
                 }
 
                 if (!state.locked.b) {
@@ -632,6 +628,7 @@
         function hardReset() {
             stopScanning();
             
+            // Full Reset
             state.locked = {b:false};
             state.results = {b:null};
             state.activeSearch = false;
@@ -650,6 +647,7 @@
             els.ctx.fillRect(0,0,512,512);
             
             document.getElementById('save-btn').classList.add('hidden');
+            
             switchScreen('home');
         }
 
@@ -685,7 +683,6 @@
 
                 const colOuter = "rgb(200, 200, 200)";
                 const colInner = "rgb(50, 50, 50)";
-                const colQuiet = "rgb(100, 100, 100)";
 
                 els.ctx.fillStyle = colOuter;
                 els.ctx.fillRect(0, 0, 512, 512);
@@ -720,12 +717,16 @@
                         
                         const isDataCore = (qrR >= 0 && qrR < moduleCount && qrC >= 0 && qrC < moduleCount);
 
+                        // R & G Channels
                         let valR = gridR[oR][oC] ? 200 : 50;
                         let valG = gridG[oR][oC] ? 200 : 50;
+
+                        // B Channel (Inverted Logic)
                         let valB = 100; 
 
                         if (isDataCore) {
-                            valB = qr.isDark(qrR, qrC) ? 100 : 150;
+                            // Inversion: If QR is Dark (Data), make Blue Light (150)
+                            valB = qr.isDark(qrR, qrC) ? 150 : 100;
                         }
                         
                         els.ctx.fillStyle = `rgb(${valR}, ${valG}, ${valB})`;
@@ -733,7 +734,7 @@
                     }
                 }
 
-                // Show Save Button
+                // Show Save Button after generation
                 document.getElementById('save-btn').classList.remove('hidden');
                 
             } catch(e) {
