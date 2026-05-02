@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#C8C896"> <!-- Theme color matches outer frame -->
+    <meta name="theme-color" content="#C8C8C8"> <!-- Theme color matches outer frame -->
     <link rel="apple-touch-icon" href="icon-192.png">
     
     <title>QRnament v3.5 // Spectral Mandala</title>
@@ -105,7 +105,7 @@
         @keyframes flash { 0% { opacity: 0; } 20% { opacity: 0.8; } 100% { opacity: 0; } }
         .flash-anim { animation: flash 0.3s ease-out; }
 
-        /* Dropdown Menu (Hamburger) */
+        /* Dropdown Menu */
         .dropdown-menu { 
             transform: translateY(-10px); opacity: 0; visibility: hidden; 
             transition: all 0.2s ease; 
@@ -132,7 +132,7 @@
 
         <main class="flex-1 flex flex-col items-center justify-center px-2 pb-10 text-center">
             <div id="welcome-text" class="text-base text-zinc-300 mb-10 leading-relaxed max-w-md bg-zinc-900/30 p-6 rounded-2xl border border-white/5">
-                <!-- Content injected via JS i18n -->
+                <!-- Content injected via JS -->
             </div>
 
             <div class="w-full max-w-xs space-y-4 mt-auto">
@@ -259,10 +259,7 @@
             ua: {
                 // Welcome Screen (HTML content)
                 welcome_html: `<p class="font-bold text-white mb-4 text-lg">Генератор і сканер орнаментальних QR-кодів.</p>
-                <p class="mb-4">Такі коди не зчитуються стандартними сканерами.</p>
-                <p class="mb-4">Сканер підтримує як орнаментальні, так і звичайні QR-коди.</p>
-                <p class="mb-4 text-zinc-400">Робота доступна в цифровому середовищі.</p>
-                <p class="text-zinc-500 text-sm mt-4 border-t border-white/10 pt-4">З питань друку — зверніться до автора проєкту.</p>`,
+                <p class="mb-4">Такі коди не зчитуються стандартними сканерами, але коректно зчитуються цим сканером. Це дозволяє використовувати їх як унікальні цифрові арт об’єкти.</p>`,
                 
                 // Buttons
                 btn_create_home: "[+] Створити",
@@ -276,8 +273,8 @@
                 t_header_scan: "Сканування",
                 
                 // Menu
-                t_tech_text: "Для успішного перенесення цифрового коду на фізичний носій необхідно враховувати принципи, описані в:",
-                t_tech_contact: "Для коректного друку зверніться до автора проєкту.",
+                t_tech_text: "Звичайний CMYK-друк не підходить для відтворення таких QR-кодів, оскільки порушує цілісність кольорових каналів і може призвести до втрати даних. Коректний друк можливий лише з використанням спеціальної моделі SCI, описаної в цій технології:",
+                t_tech_contact: "З питань виготовлення та друку кодів звертайтеся до автора проєкту.",
                 
                 // Placeholders
                 ph_b_text: "Введіть текст...",
@@ -286,10 +283,7 @@
             en: {
                 // Welcome Screen (HTML content)
                 welcome_html: `<p class="font-bold text-white mb-4 text-lg">Ornamental QR Code Generator & Scanner.</p>
-                <p class="mb-4">These codes are not readable by standard scanners.</p>
-                <p class="mb-4">The scanner supports both ornamental and standard QR codes.</p>
-                <p class="mb-4 text-zinc-400">Work is available in digital environments.</p>
-                <p class="text-zinc-500 text-sm mt-4 border-t border-white/10 pt-4">For printing inquiries, contact the project author.</p>`,
+                <p class="mb-4">These codes are not readable by standard scanners, but are correctly read by this scanner. This allows using them as unique digital art objects.</p>`,
                 
                 // Buttons
                 btn_create_home: "[+] Create",
@@ -303,8 +297,8 @@
                 t_header_scan: "Scan",
                 
                 // Menu
-                t_tech_text: "For successful transfer of the digital code to a physical medium, it is necessary to consider the principles described in:",
-                t_tech_contact: "For correct printing, please contact the project author.",
+                t_tech_text: "Standard CMYK printing is not suitable for reproducing such QR codes, as it violates the integrity of color channels and can lead to data loss. Correct printing is possible only using the special SCI model described in this technology:",
+                t_tech_contact: "For code manufacturing and printing inquiries, contact the project author.",
                 
                 // Placeholders
                 ph_b_text: "Type to generate...",
@@ -635,12 +629,15 @@
 
         function hardReset() {
             stopScanning();
+            
+            // Reset state fully
             state.locked = {b:false};
             state.results = {b:null};
             state.activeSearch = false;
             state.standardFailCount = 0;
             state.time = 0;
 
+            // Clear UI
             els.bText.value = ""; 
             els.bText.classList.remove('locked', 'locked-b');
             els.bTextScan.value = ""; 
@@ -656,7 +653,7 @@
             switchScreen('home');
         }
 
-        // === 8. MANDALA GENERATION (CHANNEL MIXING & FRAMES) ===
+        // === 8. MANDALA GENERATION (STRICT GEOMETRY & COLORS) ===
         function generateMandala() {
             const text = els.bText.value;
             
@@ -681,57 +678,87 @@
                 
                 const moduleCount = qr.getModuleCount();
                 
-                // 1. Geometry & Frame Specification
+                // 1. Geometry Specs
                 const frameOuter = 2; 
                 const frameInner = 1; 
-                const totalFrame = frameOuter + frameInner;
+                const quietZone = 2; 
                 
-                const totalModules = moduleCount + (totalFrame * 2);
+                // Calculate total size
+                const totalModules = moduleCount + (quietZone * 2) + (frameInner * 2) + (frameOuter * 2);
                 const modSize = 512 / totalModules;
 
                 // Colors
-                // Outer Frame: RGB(200, 200, 150)
-                const colOuter = "rgb(200, 200, 150)";
-                // Inner Frame: RGB(50, 50, 100)
-                const colInner = "rgb(50, 50, 100)";
+                const colOuter = "rgb(200, 200, 200)";
+                const colInner = "rgb(50, 50, 50)";
+                const colQuiet = "rgb(100, 100, 100)"; // Blue channel requirement
 
-                // Draw Background (Outer Frame Color)
+                // Draw Background (Outer Frame)
                 els.ctx.fillStyle = colOuter;
                 els.ctx.fillRect(0, 0, 512, 512);
 
                 // Draw Inner Frame
+                // Offset = OuterFrame
                 const innerFrameOffset = frameOuter * modSize;
                 const innerFrameSize = 512 - (innerFrameOffset * 2);
                 els.ctx.fillStyle = colInner;
                 els.ctx.fillRect(innerFrameOffset, innerFrameOffset, innerFrameSize, innerFrameSize);
                 
-                // Draw Data Area (Black base to start)
-                const qrOffset = totalFrame * modSize;
-                const qrSize = 512 - (qrOffset * 2);
-                els.ctx.fillStyle = "#000000"; 
-                els.ctx.fillRect(qrOffset, qrOffset, qrSize, qrSize);
+                // Generate Ornament Grid (Spans Quiet Zone + Data Core)
+                // Total area for ornament = moduleCount + quietZone*2
+                const ornamentSize = moduleCount + (quietZone * 2);
+                const gridR = build7x7Grid(ornamentSize);
+                const gridG = build7x7Grid(ornamentSize);
 
-                // Generate Ornament Grids
-                const gridR = build7x7Grid(moduleCount);
-                const gridG = build7x7Grid(moduleCount);
-
-                // 2. Grayscale-to-RGB Channel Mapping (Color Logic)
-                // R/G: Dark=50, Light=200
-                // B:   Dark=100, Light=150
+                // Iteration limits
+                // Core start index in the total grid
+                const coreStart = frameOuter + frameInner + quietZone;
                 
-                for (let r = 0; r < moduleCount; r++) {
-                    for (let c = 0; c < moduleCount; c++) {
-                        const x = qrOffset + c * modSize;
-                        const y = qrOffset + r * modSize;
-                        
-                        // Determine Values
-                        // R & G channels map Ornament
-                        let valR = gridR[r][c] ? 200 : 50;
-                        let valG = gridG[r][c] ? 200 : 50;
+                for (let r = 0; r < totalModules; r++) {
+                    for (let c = 0; c < totalModules; c++) {
+                        const x = c * modSize;
+                        const y = r * modSize;
 
-                        // B channel maps Data
-                        // QR isDark = true means "Data", we map that to "Dark" (100)
-                        let valB = qr.isDark(r, c) ? 100 : 150;
+                        // Determine Region
+                        const isOuterFrame = (r < frameOuter || r >= totalModules - frameOuter || c < frameOuter || c >= totalModules - frameOuter);
+                        const isInnerFrame = !isOuterFrame && (r < frameOuter + frameInner || r >= totalModules - (frameOuter + frameInner) || c < frameOuter + frameInner || c >= totalModules - (frameOuter + frameInner));
+                        
+                        if (isOuterFrame) continue; // Already drawn
+                        if (isInnerFrame) continue; // Already drawn
+                        
+                        // We are now inside the "Ornament Area" (Quiet Zone + Data Core)
+                        
+                        // Calculate relative coords for ornament grid
+                        const oR = r - (frameOuter + frameInner);
+                        const oC = c - (frameOuter + frameInner);
+
+                        // Calculate QR Data Coords
+                        const qrR = r - coreStart;
+                        const qrC = c - coreStart;
+                        
+                        // Check if inside Data Core
+                        const isDataCore = (qrR >= 0 && qrR < moduleCount && qrC >= 0 && qrC < moduleCount);
+
+                        // --- Channel Logic ---
+                        
+                        // R & G Channels (Ornament)
+                        // Map: Dark(0) -> 50, Light(1) -> 200
+                        let valR = gridR[oR][oC] ? 200 : 50;
+                        let valG = gridG[oR][oC] ? 200 : 50;
+
+                        // B Channel (Data)
+                        // Logic: Quiet Zone = 100.
+                        // Core: Black(Dark) -> 100, White(Light) -> 150.
+                        // This means: Background(Quiet) = 100. 
+                        // Core White(Light) = 150. Core Black(Dark) = 100.
+                        
+                        let valB = 100; // Default for Quiet Zone
+
+                        if (isDataCore) {
+                            // Map QR data. 
+                            // isDark == true means Black module -> 100.
+                            // isDark == false means White module -> 150.
+                            valB = qr.isDark(qrR, qrC) ? 100 : 150;
+                        }
                         
                         els.ctx.fillStyle = `rgb(${valR}, ${valG}, ${valB})`;
                         els.ctx.fillRect(x, y, modSize + 0.5, modSize + 0.5);
