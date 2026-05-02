@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#C8C8C8"> <!-- Theme color matches outer frame -->
+    <meta name="theme-color" content="#C8C8C8">
     <link rel="apple-touch-icon" href="icon-192.png">
     
     <title>QRnament v3.5 // Spectral Mandala</title>
@@ -169,6 +169,7 @@
              </div>
         </div>
 
+        <!-- SAVE BUTTON SECTION -->
         <div class="p-4 flex-shrink-0">
             <button id="btn-save" onclick="saveQR()" class="w-full py-4 bg-white text-black font-bold rounded-2xl hidden active:scale-95 text-sm tracking-widest uppercase shadow-lg shadow-white/20"></button>
         </div>
@@ -211,7 +212,8 @@
         </div>
         <div class="p-4 text-xs space-y-3">
             <div class="text-zinc-400">
-                <h3 class="font-bold text-white mb-1">⚙️ Технологія друку</h3>
+                <!-- Updated Title with Diamond Emoji -->
+                <h3 class="font-bold text-white mb-1">🔹 Технологія друку</h3>
                 <p id="t-tech-text" class="leading-relaxed"></p>
                 <a href="https://zenodo.org/records/19633526" target="_blank" class="text-blue-400 hover:underline block mt-1 text-[11px]">Zenodo: SCI Model</a>
                 <p id="t-tech-contact" class="mt-2 text-zinc-500"></p>
@@ -273,7 +275,7 @@
                 t_header_scan: "Сканування",
                 
                 // Menu
-                t_tech_text: "Звичайний CMYK-друк не підходить для відтворення таких QR-кодів, оскільки порушує цілісність кольорових каналів і може призвести до втрати даних. Коректний друк можливий лише з використанням спеціальної моделі SCI, описаної в цій технології:",
+                t_tech_text: "Звичайний CMYK-друк не підходить для відтворення таких QR-кодів, оскільки порушує цілісність каналів і втрати даних. Коректний друк можливий лише з використанням спеціальної моделі SCI, описаної в цій технології:",
                 t_tech_contact: "З питань виготовлення та друку кодів звертайтеся до автора проєкту.",
                 
                 // Placeholders
@@ -297,7 +299,7 @@
                 t_header_scan: "Scan",
                 
                 // Menu
-                t_tech_text: "Standard CMYK printing is not suitable for reproducing such QR codes, as it violates the integrity of color channels and can lead to data loss. Correct printing is possible only using the special SCI model described in this technology:",
+                t_tech_text: "Standard CMYK printing is not suitable for reproducing such QR codes, as it violates the integrity of channels and data loss. Correct printing is possible only using the special SCI model described in this technology:",
                 t_tech_contact: "For code manufacturing and printing inquiries, contact the project author.",
                 
                 // Placeholders
@@ -630,14 +632,12 @@
         function hardReset() {
             stopScanning();
             
-            // Reset state fully
             state.locked = {b:false};
             state.results = {b:null};
             state.activeSearch = false;
             state.standardFailCount = 0;
             state.time = 0;
 
-            // Clear UI
             els.bText.value = ""; 
             els.bText.classList.remove('locked', 'locked-b');
             els.bTextScan.value = ""; 
@@ -653,11 +653,10 @@
             switchScreen('home');
         }
 
-        // === 8. MANDALA GENERATION (STRICT GEOMETRY & COLORS) ===
+        // === 8. MANDALA GENERATION ===
         function generateMandala() {
             const text = els.bText.value;
             
-            // Clear Canvas
             els.ctx.fillStyle = "#000000"; 
             els.ctx.fillRect(0,0,512,512);
 
@@ -670,7 +669,6 @@
             els.main.classList.remove('hidden');
 
             try {
-                // Prepare QR Data
                 const utf8Text = unescape(encodeURIComponent(text));
                 const qr = qrcode(0, 'M');
                 qr.addData(utf8Text);
@@ -678,39 +676,29 @@
                 
                 const moduleCount = qr.getModuleCount();
                 
-                // 1. Geometry Specs
                 const frameOuter = 2; 
                 const frameInner = 1; 
                 const quietZone = 2; 
                 
-                // Calculate total size
                 const totalModules = moduleCount + (quietZone * 2) + (frameInner * 2) + (frameOuter * 2);
                 const modSize = 512 / totalModules;
 
-                // Colors
                 const colOuter = "rgb(200, 200, 200)";
                 const colInner = "rgb(50, 50, 50)";
-                const colQuiet = "rgb(100, 100, 100)"; // Blue channel requirement
+                const colQuiet = "rgb(100, 100, 100)";
 
-                // Draw Background (Outer Frame)
                 els.ctx.fillStyle = colOuter;
                 els.ctx.fillRect(0, 0, 512, 512);
 
-                // Draw Inner Frame
-                // Offset = OuterFrame
                 const innerFrameOffset = frameOuter * modSize;
                 const innerFrameSize = 512 - (innerFrameOffset * 2);
                 els.ctx.fillStyle = colInner;
                 els.ctx.fillRect(innerFrameOffset, innerFrameOffset, innerFrameSize, innerFrameSize);
                 
-                // Generate Ornament Grid (Spans Quiet Zone + Data Core)
-                // Total area for ornament = moduleCount + quietZone*2
                 const ornamentSize = moduleCount + (quietZone * 2);
                 const gridR = build7x7Grid(ornamentSize);
                 const gridG = build7x7Grid(ornamentSize);
 
-                // Iteration limits
-                // Core start index in the total grid
                 const coreStart = frameOuter + frameInner + quietZone;
                 
                 for (let r = 0; r < totalModules; r++) {
@@ -718,45 +706,25 @@
                         const x = c * modSize;
                         const y = r * modSize;
 
-                        // Determine Region
                         const isOuterFrame = (r < frameOuter || r >= totalModules - frameOuter || c < frameOuter || c >= totalModules - frameOuter);
                         const isInnerFrame = !isOuterFrame && (r < frameOuter + frameInner || r >= totalModules - (frameOuter + frameInner) || c < frameOuter + frameInner || c >= totalModules - (frameOuter + frameInner));
                         
-                        if (isOuterFrame) continue; // Already drawn
-                        if (isInnerFrame) continue; // Already drawn
+                        if (isOuterFrame) continue; 
+                        if (isInnerFrame) continue; 
                         
-                        // We are now inside the "Ornament Area" (Quiet Zone + Data Core)
-                        
-                        // Calculate relative coords for ornament grid
                         const oR = r - (frameOuter + frameInner);
                         const oC = c - (frameOuter + frameInner);
 
-                        // Calculate QR Data Coords
                         const qrR = r - coreStart;
                         const qrC = c - coreStart;
                         
-                        // Check if inside Data Core
                         const isDataCore = (qrR >= 0 && qrR < moduleCount && qrC >= 0 && qrC < moduleCount);
 
-                        // --- Channel Logic ---
-                        
-                        // R & G Channels (Ornament)
-                        // Map: Dark(0) -> 50, Light(1) -> 200
                         let valR = gridR[oR][oC] ? 200 : 50;
                         let valG = gridG[oR][oC] ? 200 : 50;
-
-                        // B Channel (Data)
-                        // Logic: Quiet Zone = 100.
-                        // Core: Black(Dark) -> 100, White(Light) -> 150.
-                        // This means: Background(Quiet) = 100. 
-                        // Core White(Light) = 150. Core Black(Dark) = 100.
-                        
-                        let valB = 100; // Default for Quiet Zone
+                        let valB = 100; 
 
                         if (isDataCore) {
-                            // Map QR data. 
-                            // isDark == true means Black module -> 100.
-                            // isDark == false means White module -> 150.
                             valB = qr.isDark(qrR, qrC) ? 100 : 150;
                         }
                         
@@ -765,6 +733,7 @@
                     }
                 }
 
+                // Show Save Button
                 document.getElementById('save-btn').classList.remove('hidden');
                 
             } catch(e) {
@@ -845,7 +814,7 @@
         };
         
         // Init
-        setLang('ua'); // Set default language
+        setLang('ua');
         switchScreen('home');
 
     </script>
