@@ -263,19 +263,14 @@
             [0,63,32,62,2,126,0], [64,95,81,93,69,125,1], [51,51,102,102,76,76,25]
         ];
 
-        // === 2. DICTIONARY (i18n) ===
+        // === 2. DICTIONARY (i18n) & LOCALIZATION LOGIC ===
         const LANG = {
             ua: {
-                // Текст для блока технологии
                 t_tech_text: "Звичайний CMYK-друк не підходить для відтворення таких QR-кодів, оскільки порушує цілісність каналів.",
                 t_tech_text_2: "Коректний друк можливий лише з використанням спеціальної моделі, описаної в цій технології.",
                 t_tech_contact: "З питань виготовлення та друку кодів звертайтеся до автора проєкту.",
-                
-                // Приветствие на главной
                 welcome_html: `<p class="font-bold text-white mb-4 text-lg">Генератор і сканер орнаментальних QR-кодів.</p>
                                <p class="mb-4">Такі коди не зчитуються стандартними сканерами, але коректно зчитуються цим сканером. Це дозволяє використовувати їх як унікальні цифрові арт об’єкти.</p>`,
-                
-                // Кнопки и интерфейс
                 btn_create_home: "[+] Створити",
                 btn_scan_home: "[🔍] Сканувати",
                 btn_save: "Зберегти PNG",
@@ -303,6 +298,43 @@
                 ph_b_scan: "Scan Result"
             }
         };
+
+        function setLang(lang) {
+            const dict = LANG[lang];
+            if (!dict) return;
+
+            // Заполнение приветственного текста
+            const wText = document.getElementById('welcome-text');
+            if (wText) wText.innerHTML = dict.welcome_html;
+
+            // Автоматическое заполнение текстовых блоков (с заменой _ на -)
+            ['t_header_create', 't_header_scan', 't_tech_text', 't_tech_text_2', 't_tech_contact'].forEach(key => {
+                const el = document.getElementById(key.replace(/_/g, '-'));
+                if (el) el.textContent = dict[key];
+            });
+
+            // Кнопки
+            const bCreate = document.getElementById('btn-create-home');
+            if (bCreate) bCreate.textContent = dict.btn_create_home;
+            const bScan = document.getElementById('btn-scan-home');
+            if (bScan) bScan.textContent = dict.btn_scan_home;
+            const bSave = document.getElementById('btn-save');
+            if (bSave) bSave.textContent = dict.btn_save;
+            
+            const bCam = document.getElementById('btn-cam');
+            if (bCam) bCam.innerHTML = `<span>${dict.btn_cam}</span>`;
+            const bFile = document.getElementById('btn-file');
+            if (bFile) bFile.innerHTML = `<span>${dict.btn_file}</span>`;
+
+            // Плейсхолдеры
+            if (typeof els !== 'undefined') {
+                if (els.bText) els.bText.placeholder = dict.ph_b_text;
+                if (els.bTextScan) els.bTextScan.placeholder = dict.ph_b_scan;
+            }
+        }
+
+        // Запуск украинского языка по умолчанию
+        setTimeout(() => setLang('ua'), 10);
                 // Buttons
                 btn_create_home: "[+] Створити",
                 btn_scan_home: "[🔍] Сканувати",
