@@ -19,6 +19,12 @@
             --neon-green: #00ff41;
             --b-color: #0088FF;
             --bg-color: #000000;
+            
+            /* Pastel CMYK for Frames (Muted RGB Palette) */
+            --c-cyan: #7DD3FC;    /* Muted Blue/Cyan */
+            --c-magenta: #F0ABFC; /* Muted Red/Magenta */
+            --c-yellow: #FDE047;  /* Muted Yellow */
+            --c-key: #A1A1AA;     /* Key/Black */
         }
         
         body { 
@@ -30,7 +36,7 @@
             touch-action: manipulation;
         }
 
-        /* Logo Colors */
+        /* Logo Colors (Saturated) */
         .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
         .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
 
@@ -105,6 +111,13 @@
         /* Effects */
         @keyframes flash { 0% { opacity: 0; } 20% { opacity: 0.8; } 100% { opacity: 0; } }
         .flash-anim { animation: flash 0.3s ease-out; }
+
+        /* Dropdown Menu (Hamburger) */
+        .dropdown-menu { 
+            transform: translateY(-10px); opacity: 0; visibility: hidden; 
+            transition: all 0.2s ease; 
+        }
+        .dropdown-menu.show { transform: translateY(0); opacity: 1; visibility: visible; }
     </style>
 </head>
 <body class="p-4 pb-6">
@@ -115,19 +128,32 @@
     <!-- ===================== SCREEN: HOME ===================== -->
     <div id="screen-home" class="screen active">
         <header class="flex items-center justify-center relative z-50 h-20 mb-4">
+            <!-- Empty spacer left to balance menu -->
+            <div class="w-10 h-10"></div>
+            
+            <!-- Centered Title -->
             <h1 class="text-3xl font-black tracking-tighter uppercase absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                 <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
             </h1>
+            
+            <!-- Menu Right (Hamburger) -->
+            <button id="menu-btn-home" class="absolute right-0 w-10 h-10 flex items-center justify-center text-white text-xl active:scale-90 transition-transform">☰</button>
         </header>
 
         <main class="flex-1 flex flex-col items-center justify-center px-2 pb-10 text-center">
             <div class="text-base text-zinc-300 mb-10 leading-relaxed max-w-md bg-zinc-900/30 p-6 rounded-2xl border border-white/5">
-                <p class="font-bold text-white mb-4 text-lg">Орнаментальні QR-коди</p>
+                <p class="font-bold text-white mb-4 text-lg">Генератор і сканер орнаментальних QR-кодів</p>
                 <p class="mb-4">
-                    Генерація та сканування спектральних кодів. Дані кодуються в синьому каналі, орнамент — у червоному та зеленому.
+                    Такі коди не зчитуються стандартними сканерами.
                 </p>
-                <p class="text-zinc-400">
-                    Використовує алгоритми адаптивної бінаризації та SCI-модель для зчитування.
+                <p class="mb-4">
+                    Сканер підтримує як орнаментальні, так і звичайні QR-коди.
+                </p>
+                <p class="mb-4 text-zinc-400">
+                    Робота доступна в цифровому середовищі. Звичайний CMYK-друк не забезпечує коректного відтворення.
+                </p>
+                <p class="text-zinc-500 text-sm mt-4 border-t border-white/10 pt-4">
+                    З питань друку — зверніться до автора проєкту.
                 </p>
             </div>
 
@@ -153,7 +179,7 @@
             <div class="flex-1 text-center">
                 <h1 class="text-xl font-black tracking-tighter">Створення</h1>
             </div>
-            <div class="w-10 h-10"></div>
+            <button id="menu-btn-create" class="w-10 h-10 flex items-center justify-center text-white text-xl z-10 active:scale-90 transition-transform">☰</button>
         </header>
 
         <div class="p-4 space-y-2 flex-shrink-0">
@@ -207,6 +233,28 @@
         </div>
     </div>
 
+    <!-- ===================== DROPDOWN MENU ===================== -->
+    <div id="dropdown" class="dropdown-menu fixed top-4 right-4 w-72 bg-zinc-900/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl z-[100] overflow-hidden">
+        <div class="flex border-b border-white/10 p-1 bg-zinc-800/50">
+            <button onclick="setLanguage('uk')" class="flex-1 py-2 text-[10px] font-bold text-zinc-400 hover:text-white transition-colors border-r border-white/5">🇺🇦 UA</button>
+            <button onclick="setLanguage('en')" class="flex-1 py-2 text-[10px] font-bold text-zinc-400 hover:text-white transition-colors">🇬🇧 EN</button>
+        </div>
+        <div class="p-4 text-xs space-y-3">
+            <div class="text-zinc-400">
+                <h3 class="font-bold text-white mb-1">⚙️ Технологія друку</h3>
+                <p class="leading-relaxed">Звичайний CMYK-друк не підходить, оскільки порушує структуру кольорових каналів. Для успішного перенесення цифрового коду на фізичний носій необхідно враховувати принципи, описані в:</p>
+                <a href="https://zenodo.org/records/19633526" target="_blank" class="text-blue-400 hover:underline block mt-1 text-[11px]">Zenodo: SCI Model</a>
+            </div>
+            <div class="border-t border-white/10 pt-3 space-y-2 text-zinc-400">
+                <div class="font-bold text-white">Mykhailo Kashkarov</div>
+                <div>📧 <a href="mailto:colqrnament@gmail.com" class="hover:text-white">colqrnament@gmail.com</a></div>
+                <div>📞 <a href="tel:+380635058292" class="hover:text-white">063 505 82 92</a></div>
+                <div>💻 <a href="https://github.com/Astra31415926" target="_blank" class="hover:text-white text-[11px] block truncate">github.com/Astra31415926</a></div>
+                <div>🌐 <a href="https://astra31415926.github.io/" target="_blank" class="hover:text-white text-[11px] block truncate">astra31415926.github.io</a></div>
+            </div>
+        </div>
+    </div>
+
     <!-- FLASH LAYER -->
     <div id="flash-layer" class="fixed inset-0 bg-white opacity-0 pointer-events-none z-[200]"></div>
 
@@ -235,20 +283,18 @@
             [0,63,32,62,2,126,0], [64,95,81,93,69,125,1], [51,51,102,102,76,76,25]
         ];
 
-        // === 2. STATE & CONFIG (INTEGRATED) ===
+        // === 2. STATE & CONFIG ===
         const state = {
             scanning: false,
             locked: { b: false },
             results: { b: null },
             
-            // Hybrid Logic
             activeSearch: false,
             standardFailCount: 0,
             AUTO_TRIGGER_THRESHOLD: 45,
             time: 0,
             
             config: {
-                // Blue Channel SCI Config
                 B: { k1: 0.05, k2: 0.13 }
             }
         };
@@ -265,6 +311,7 @@
             fCtx: null,
             flash: document.getElementById('flash-layer'),
             viewfinder: document.createElement('div'),
+            dropdown: document.getElementById('dropdown'),
             containers: {
                 create: document.getElementById('container-create'),
                 scan: document.getElementById('container-scan')
@@ -286,9 +333,7 @@
         els.viewfinder.className = "viewfinder-corners hidden";
         els.viewfinder.innerHTML = `<div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>`;
 
-        // === 3. ALGORITHMS (FROM USER PROVIDED SNIPPET) ===
-
-        // Bradley Binarization
+        // === 3. ALGORITHMS ===
         function applyBradleyStandard(imgData, chIdx) {
             const w = imgData.width, h = imgData.height;
             const input = imgData.data;
@@ -319,14 +364,12 @@
             return new ImageData(output, w, h);
         }
 
-        // SCI Math Model
         function applySCIMath(imgData, ch, cfg) {
             const d = imgData.data;
             for (let i = 0; i < d.length; i += 4) {
                 let r = d[i], g = d[i+1], b = d[i+2];
                 let target, n1, n2;
                 
-                // We only use Blue channel logic here
                 if (ch === 'B') { target = b; n1 = r; n2 = g; }
                 else { target = b; n1 = r; n2 = g; }
 
@@ -343,7 +386,7 @@
             return min + pos * (max - min);
         }
 
-        // === 4. MAIN HYBRID LOOP (BLUE CHANNEL ONLY) ===
+        // === 4. MAIN HYBRID LOOP ===
         function processLoop() {
             if (!state.scanning) return;
 
@@ -357,23 +400,20 @@
             }
 
             if (sourceCopy) {
-                // Auto-switch to Active Search
                 if (state.standardFailCount > state.AUTO_TRIGGER_THRESHOLD && !state.activeSearch) {
                     state.activeSearch = true;
                     console.log("Engaging Active Search (SCI) for Blue Channel");
                 }
 
-                // ONLY PROCESS BLUE CHANNEL
                 if (!state.locked.b) {
                     const ch = 'B';
-                    const idx = 2; // Blue channel index
+                    const idx = 2; 
                     const baseCfg = state.config[ch];
                     let foundInFrame = false;
 
                     if (state.activeSearch) {
                         state.time++; 
                         
-                        // Dynamic Params
                         const gain = getOscParam(state.time, 100, 0.5, 3.5);
                         const offset = getOscParam(state.time, 250, -80, 0);
                         const cfg = { ...baseCfg, gain, offset };
@@ -394,7 +434,6 @@
                     } else {
                         state.standardFailCount++;
                         
-                        // Standard Mode
                         let mono = applyBradleyStandard(sourceCopy, idx);
                         const code = jsQR(mono.data, 512, 512, { inversionAttempts: "attemptBoth" });
                         
@@ -414,7 +453,7 @@
 
         // === 5. UI & ACTIONS ===
         function lockChannel(ch, data) {
-            const key = ch.toLowerCase(); // 'b'
+            const key = ch.toLowerCase();
             if (state.locked[key]) return;
             
             state.locked[key] = true;
@@ -426,14 +465,12 @@
             els.viewfinder.classList.add('viewfinder-hunting');
             setTimeout(() => els.viewfinder.classList.remove('viewfinder-hunting'), 300);
 
-            // Fill Inputs
             els.bTextScan.value = data;
             els.bTextScan.classList.add('locked', 'locked-b');
             
             els.bText.value = data;
             els.bText.classList.add('locked', 'locked-b');
 
-            // Logic: If found, stop and go to Create screen
             if (state.locked.b) {
                 stopScanning();
                 switchScreen('create');
@@ -479,7 +516,6 @@
         }
 
         async function startCamera() {
-            // Reset state
             state.locked = {b:false};
             state.results = {b:null};
             state.activeSearch = false;
@@ -537,7 +573,7 @@
                     els.main.classList.add('hidden');
 
                     state.scanning = true;
-                    state.activeSearch = true; // Files usually need stronger processing
+                    state.activeSearch = true; 
                     state.standardFailCount = 100; 
                     
                     requestAnimationFrame(processLoop);
@@ -580,7 +616,7 @@
             switchScreen('home');
         }
 
-        // === 6. MANDALA GENERATION LOGIC ===
+        // === 6. MANDALA GENERATION LOGIC (WITH FRAMES) ===
         function generateMandala() {
             const text = els.bText.value;
             
@@ -602,26 +638,69 @@
                 qr.make();
                 
                 const moduleCount = qr.getModuleCount();
-                const quietZone = 4;
-                const totalModules = moduleCount + quietZone * 2;
+                
+                // --- FRAME GEOMETRY ---
+                const frameOuter = 2; // Outer frame thickness in modules
+                const frameInner = 1; // Inner frame thickness in modules
+                const totalFrame = frameOuter + frameInner;
+                
+                const totalModules = moduleCount + (totalFrame * 2);
                 const modSize = 512 / totalModules;
                 
-                const gridR = build7x7Grid(totalModules);
-                const gridG = build7x7Grid(totalModules);
+                // 1. Draw Frames (Muted RGB Palette / Pastel CMYK)
+                // Outer Frame (Pastel Cyan)
+                els.ctx.fillStyle = "#7DD3FC"; 
+                els.ctx.fillRect(0, 0, 512, 512); // Fill whole canvas
                 
+                // Inner Frame (Pastel Magenta)
+                // Inset by frameOuter (2 modules)
+                const innerFrameOffset = frameOuter * modSize;
+                const innerFrameSize = 512 - (innerFrameOffset * 2);
+                els.ctx.fillStyle = "#F0ABFC";
+                els.ctx.fillRect(innerFrameOffset, innerFrameOffset, innerFrameSize, innerFrameSize);
+                
+                // Background for QR (Black) - The "Canvas" for the code
+                // Inset by totalFrame (3 modules)
+                const qrOffset = totalFrame * modSize;
+                const qrSize = 512 - (qrOffset * 2);
+                els.ctx.fillStyle = "#000000";
+                els.ctx.fillRect(qrOffset, qrOffset, qrSize, qrSize);
+                
+                // 2. Draw Mandala Sprites (R & G) behind QR data
+                // We generate grids for the inner area (moduleCount)
+                const gridR = build7x7Grid(moduleCount);
+                const gridG = build7x7Grid(moduleCount);
+                
+                // Use 'screen' blend mode to mix R and G on black background
                 els.ctx.globalCompositeOperation = "screen";
-
-                els.ctx.fillStyle = "#FF0000";
-                drawGrid(els.ctx, gridR, totalModules, modSize);
                 
+                // Draw Sprites (Red Channel)
+                els.ctx.fillStyle = "#FF0000"; 
+                // Loop only over the QR area
+                for (let r = 0; r < moduleCount; r++) {
+                    for (let c = 0; c < moduleCount; c++) {
+                        if (gridR[r][c]) {
+                             els.ctx.fillRect(qrOffset + c * modSize, qrOffset + r * modSize, modSize, modSize);
+                        }
+                    }
+                }
+                
+                // Draw Sprites (Green Channel)
                 els.ctx.fillStyle = "#00FF00";
-                drawGrid(els.ctx, gridG, totalModules, modSize);
+                for (let r = 0; r < moduleCount; r++) {
+                    for (let c = 0; c < moduleCount; c++) {
+                        if (gridG[r][c]) {
+                             els.ctx.fillRect(qrOffset + c * modSize, qrOffset + r * modSize, modSize, modSize);
+                        }
+                    }
+                }
 
+                // 3. Draw QR Data (Blue Channel)
                 els.ctx.fillStyle = "#0000FF";
                 for (let r = 0; r < moduleCount; r++) {
                     for (let c = 0; c < moduleCount; c++) {
                         if (qr.isDark(r, c)) {
-                            els.ctx.fillRect((c + quietZone) * modSize, (r + quietZone) * modSize, modSize, modSize);
+                            els.ctx.fillRect(qrOffset + c * modSize, qrOffset + r * modSize, modSize, modSize);
                         }
                     }
                 }
@@ -685,16 +764,6 @@
             return grid;
         }
 
-        function drawGrid(ctx, grid, size, cellSize) {
-            for(let r=0; r<size; r++) {
-                for(let c=0; c<size; c++) {
-                    if(grid[r][c]) {
-                        ctx.fillRect(c * cellSize, r * cellSize, cellSize + 0.5, cellSize + 0.5);
-                    }
-                }
-            }
-        }
-
         function saveQR() { 
             const a = document.createElement('a'); 
             a.download = 'qrnament-mandala.png'; 
@@ -706,6 +775,21 @@
         document.getElementById('file-input').addEventListener('change', handleFile);
         els.bText.addEventListener('input', generateMandala);
         
+        // Menu Logic
+        const menuBtns = [document.getElementById('menu-btn-home'), document.getElementById('menu-btn-create')];
+        menuBtns.forEach(btn => {
+            if(btn) btn.onclick = (e) => { e.stopPropagation(); els.dropdown.classList.toggle('show'); };
+        });
+        
+        document.onclick = (e) => {
+            if(!e.target.closest('#dropdown')) els.dropdown.classList.remove('show');
+        };
+        
+        // Lang Logic (Placeholder for future)
+        function setLanguage(l) {
+            console.log("Language set to: " + l);
+        }
+
         // Init
         switchScreen('home');
 
