@@ -12,156 +12,199 @@
 <style>
 :root{
   --ink:#0d0a08;--panel:#15100b;--panel2:#1d1610;
-  --gold:#c9a876;--gold-hot:#e8c890;--gold-dim:#8f7451;
+  --acc:#c9a876;--acc-hot:#e8c890;--acc-dim:#8f7451;
   --parchment:#ede3d0;--muted:#94836a;--line:rgba(201,168,118,.22);
   --ok:#58d668;--bad:#e5705a;
   --ch-r:#ff3b5c;--ch-g:#35d96a;--ch-b:#4b8dff;
   --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
 }
+/* комнаты: свой акцент у каждого генератора */
+body.room-seal{--acc:#d9a44e;--acc-hot:#ffd27a;--acc-dim:#9a7238;--line:rgba(217,164,78,.24)}
+body.room-spec{--acc:#5ec8e8;--acc-hot:#8fe4ff;--acc-dim:#3f7f96;--line:rgba(94,200,232,.24)}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
 body{background:var(--ink);color:var(--parchment);font-family:var(--sans);line-height:1.5;
-  background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(201,168,118,.07),transparent);
-  display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
-a{color:var(--gold);text-decoration:none}a:hover{color:var(--gold-hot)}
+  background-image:radial-gradient(ellipse 80% 50% at 50% -10%,color-mix(in srgb,var(--acc) 8%,transparent),transparent);
+  display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;
+  transition:background-image .5s ease}
+a{color:var(--acc);text-decoration:none}
 button{font-family:inherit}
-button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--gold-hot);outline-offset:2px}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--acc-hot);outline-offset:2px}
 .hide{display:none!important}
+.invis{visibility:hidden!important}
 
-/* ── шапка ── */
-header{border-bottom:1px solid var(--line);flex:0 0 auto;background:rgba(13,10,8,.9);backdrop-filter:blur(10px);position:sticky;top:0;z-index:60}
-.nav{display:flex;align-items:center;gap:16px;height:56px;max-width:1560px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line);flex:0 0 auto;background:rgba(13,10,8,.9);
+  backdrop-filter:blur(10px);position:sticky;top:0;z-index:60;transition:border-color .4s}
+.nav{display:flex;align-items:center;gap:16px;height:56px;max-width:1660px;margin:0 auto;padding:0 20px}
 .mark{font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:.07em;color:var(--parchment);
   display:flex;align-items:center;gap:8px;cursor:pointer;background:none;border:0;padding:4px 6px;border-radius:8px;transition:.15s}
-.mark::after{content:'';width:7px;height:7px;background:var(--gold)}
-.mark:hover{color:var(--gold-hot)}
-.tabs{display:flex;gap:2px;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-left:8px}
+.mark::after{content:'';width:7px;height:7px;background:var(--acc);transition:background .4s}
+.mark:hover{color:var(--acc-hot)}
+.tabs{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-left:8px}
 .tabs button{background:transparent;border:0;border-right:1px solid var(--line);color:var(--muted);
-  font-family:var(--mono);font-size:12.5px;font-weight:600;padding:9px 15px;cursor:pointer;transition:.15s;white-space:nowrap}
+  font-family:var(--mono);font-size:12.5px;font-weight:600;padding:9px 16px;cursor:pointer;transition:.18s;white-space:nowrap}
 .tabs button:last-child{border-right:0}
-.tabs button.on{background:rgba(201,168,118,.16);color:var(--gold-hot)}
-.tabs button:hover:not(.on){color:var(--gold-hot)}
+.tabs button.on{background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acc-hot)}
+.tabs button:hover:not(.on){color:var(--acc-hot)}
 .navright{margin-left:auto;display:flex;align-items:center;gap:10px}
-.chip{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--gold);border:1px solid var(--line);
-  border-radius:7px;padding:5px 10px;background:transparent;cursor:pointer;transition:.15s}
-.chip:hover{color:var(--gold-hot);border-color:var(--gold-dim)}
+.chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;color:var(--acc);border:1px solid var(--line);
+  border-radius:7px;padding:6px 12px;background:transparent;cursor:pointer;transition:.15s}
+.chip:hover{color:var(--acc-hot);border-color:var(--acc-dim)}
 
-/* ── три колонки ── */
-.app{flex:1 1 auto;display:grid;grid-template-columns:240px minmax(0,1fr) 244px;max-width:1560px;width:100%;margin:0 auto}
-.side{padding:20px 18px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.app{flex:1 1 auto;display:grid;grid-template-columns:312px minmax(0,1fr) 318px;max-width:1660px;width:100%;margin:0 auto}
+.side{padding:22px 22px;display:flex;flex-direction:column;gap:17px;overflow-y:auto}
 .side.left{border-right:1px solid var(--line)}
 .side.right{border-left:1px solid var(--line)}
-.center{display:flex;flex-direction:column;align-items:center;padding:20px 24px 30px;gap:14px;min-width:0}
+.center{display:flex;flex-direction:column;align-items:center;padding:18px 24px 28px;gap:13px;min-width:0}
 
-.sec-t{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--gold-dim);
+.sec-t{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--acc-dim);
   text-transform:uppercase;display:flex;align-items:center;gap:8px}
-.sec-t::before{content:'';width:5px;height:5px;background:var(--gold);flex:0 0 auto}
-.grp{display:flex;flex-direction:column;gap:8px}
-.desc{font-size:12px;color:var(--muted);line-height:1.55}
+.sec-t::before{content:'';width:5px;height:5px;background:var(--acc);flex:0 0 auto;transition:background .4s}
+.grp{display:flex;flex-direction:column;gap:9px}
+.desc{font-size:12.5px;color:var(--muted);line-height:1.6}
 .desc b{color:var(--parchment);font-weight:600}
+.roomname{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--acc-hot);letter-spacing:.04em}
 
-/* ── поля ── */
-.inp{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:11px;color:var(--parchment);
-  font-family:var(--mono);font-size:16px;padding:12px 15px;outline:none;letter-spacing:.03em}
-.inp:focus{border-color:var(--gold);box-shadow:0 0 20px rgba(201,168,118,.12)}
-.inp::placeholder{color:var(--gold-dim)}
-.inp.big{font-size:clamp(16px,2vw,21px);text-align:center;padding:14px 18px}
-.chrow{display:flex;align-items:center;gap:9px;margin-bottom:8px}
-.chdot{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
-.keybtn{width:40px;height:40px;flex:0 0 auto;border-radius:999px;border:1.5px solid var(--line);background:rgba(255,255,255,.04);
-  color:rgba(237,227,208,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s}
-.keybtn svg{width:17px;height:17px}
-.keybtn:hover{color:var(--gold-hot);border-color:var(--gold-dim)}
-.keybtn:disabled{opacity:.28;pointer-events:none}
-.keybtn.active{color:var(--gold);border-color:var(--gold);background:rgba(201,168,118,.14);animation:kp 1.4s ease-in-out infinite}
-.keybtn.locked{color:#15100b;background:var(--gold);border-color:var(--gold)}
-@keyframes kp{0%,100%{box-shadow:0 0 6px rgba(201,168,118,.4)}50%{box-shadow:0 0 16px rgba(201,168,118,.7)}}
-.masked{-webkit-text-security:disc;letter-spacing:.15em}
-.txtwrap{width:100%;max-width:660px}
-.rt{font-family:var(--mono);font-size:12px;min-height:17px;text-align:center;margin-top:7px}
+/* ── ЗОНА ВВОДУ: фіксована висота, одне поле ── */
+.txtzone{width:100%;max-width:660px;min-height:112px}
+.chtabs{display:flex;gap:6px;height:34px;align-items:center;margin-bottom:8px}
+.chtab{display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:8px;border:1px solid var(--line);
+  background:transparent;color:var(--muted);font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+.chtab .dot{width:9px;height:9px;border-radius:3px;opacity:.35;transition:.2s}
+.chtab.filled .dot{opacity:1;box-shadow:0 0 8px currentColor}
+.chtab.on{background:rgba(255,255,255,.06);color:var(--parchment);border-color:rgba(255,255,255,.25)}
+.chtab:hover:not(.on){color:var(--parchment)}
+.inrow{display:flex;align-items:center;gap:10px}
+.inp{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--parchment);
+  font-family:var(--mono);font-size:clamp(16px,1.9vw,21px);padding:15px 18px;outline:none;letter-spacing:.03em;text-align:center;
+  transition:border-color .2s,box-shadow .2s}
+.inp:focus{border-color:var(--acc);box-shadow:0 0 22px color-mix(in srgb,var(--acc) 18%,transparent)}
+.inp::placeholder{color:var(--acc-dim)}
+.inp.masked{-webkit-text-security:disc;letter-spacing:.3em}
+.inp.ch-r:focus{border-color:var(--ch-r);box-shadow:0 0 22px rgba(255,59,92,.2)}
+.inp.ch-g:focus{border-color:var(--ch-g);box-shadow:0 0 22px rgba(53,217,106,.2)}
+.inp.ch-b:focus{border-color:var(--ch-b);box-shadow:0 0 22px rgba(75,141,255,.2)}
+
+/* КНОПКА-КЛЮЧ — яскрава й помітна */
+.keybtn{width:52px;height:52px;flex:0 0 auto;border-radius:999px;cursor:pointer;transition:.22s;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent);color:var(--acc-hot);
+  box-shadow:0 0 14px color-mix(in srgb,var(--acc) 28%,transparent)}
+.keybtn svg{width:22px;height:22px}
+.keybtn:hover{background:color-mix(in srgb,var(--acc) 26%,transparent);transform:scale(1.06);
+  box-shadow:0 0 22px color-mix(in srgb,var(--acc) 45%,transparent)}
+.keybtn:active{transform:scale(.93)}
+.keybtn:disabled{opacity:.3;pointer-events:none;box-shadow:none}
+.keybtn.active{animation:kp 1.3s ease-in-out infinite}
+@keyframes kp{0%,100%{box-shadow:0 0 12px color-mix(in srgb,var(--acc) 40%,transparent)}
+  50%{box-shadow:0 0 26px color-mix(in srgb,var(--acc) 85%,transparent)}}
+.keybtn.locked{background:var(--acc);color:#15100b;border-color:var(--acc-hot);
+  box-shadow:0 0 20px color-mix(in srgb,var(--acc) 60%,transparent)}
+.rt{font-family:var(--mono);font-size:12.5px;min-height:18px;text-align:center;margin-top:9px}
 .rt .g{color:var(--ok);font-weight:600}.rt .r{color:var(--bad);font-weight:600}
+.rt .w{color:#e5a053;font-weight:600}
 
-/* ── ФІКСОВАНИЙ ХОЛСТ ── */
-.stage{width:100%;max-width:min(46vh,440px);aspect-ratio:1/1;position:relative;
+/* ── ХОЛСТ ── */
+.stage{width:100%;max-width:min(44vh,420px);aspect-ratio:1/1;position:relative;
   background:#0a0806;border:1px solid var(--line);border-radius:14px;overflow:hidden;
   display:flex;align-items:center;justify-content:center;flex:0 0 auto;
-  box-shadow:0 14px 44px rgba(0,0,0,.45)}
-.stage canvas{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;display:block}
+  box-shadow:0 14px 44px rgba(0,0,0,.5);transition:border-color .4s}
+.stage canvas{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;display:block;
+  transition:filter .5s ease,opacity .4s}
 .stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.corner{position:absolute;width:16px;height:16px;border-color:var(--gold);pointer-events:none;z-index:5}
-.c-tl{top:8px;left:8px;border-top:2px solid;border-left:2px solid}
-.c-tr{top:8px;right:8px;border-top:2px solid;border-right:2px solid}
-.c-bl{bottom:8px;left:8px;border-bottom:2px solid;border-left:2px solid}
-.c-br{bottom:8px;right:8px;border-bottom:2px solid;border-right:2px solid}
-.laser{position:absolute;left:0;width:100%;height:3px;background:var(--gold);box-shadow:0 0 12px var(--gold);
-  opacity:.85;z-index:6;animation:sc 2.4s ease-in-out infinite}
-@keyframes sc{0%{top:2%}50%{top:97%}100%{top:2%}}
+.stage.scanning canvas{filter:brightness(.4) contrast(1.35) saturate(.6)}
+.stage.revealed canvas{filter:brightness(.62) saturate(.85)}
+.corner{position:absolute;width:15px;height:15px;border-color:var(--acc);pointer-events:none;z-index:5;transition:border-color .4s}
+.c-tl{top:9px;left:9px;border-top:2px solid;border-left:2px solid}
+.c-tr{top:9px;right:9px;border-top:2px solid;border-right:2px solid}
+.c-bl{bottom:9px;left:9px;border-bottom:2px solid;border-left:2px solid}
+.c-br{bottom:9px;right:9px;border-bottom:2px solid;border-right:2px solid}
+.stage.scanning .corner{animation:cpulse .7s ease-in-out infinite alternate}
+@keyframes cpulse{from{opacity:.4}to{opacity:1}}
+.scanline{position:absolute;left:0;right:0;height:3px;top:0;opacity:0;z-index:11;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--acc-hot),transparent);
+  box-shadow:0 0 20px var(--acc-hot),0 0 40px color-mix(in srgb,var(--acc) 50%,transparent)}
+.stage.scanning .scanline{animation:sweep 1.5s cubic-bezier(.4,0,.6,1)}
+@keyframes sweep{0%{top:0;opacity:0}6%{opacity:1}94%{opacity:1}100%{top:calc(100% - 3px);opacity:0}}
+.lockveil{position:absolute;inset:0;background:rgba(8,5,3,.82);z-index:12;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;text-align:center;padding:22px;
+  opacity:0;pointer-events:none;transition:opacity .45s}
+.stage.locked .lockveil{opacity:1;pointer-events:auto}
+.lockveil svg{width:44px;height:44px;color:var(--acc);animation:lpulse 1.6s ease-in-out infinite}
+@keyframes lpulse{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+.lockveil p{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--acc-hot);text-transform:uppercase}
 .overlay{position:absolute;inset:0;background:#141009;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:12px;z-index:8;padding:20px;text-align:center}
+  align-items:center;justify-content:center;gap:13px;z-index:14;padding:22px;text-align:center}
+.refresh-fab{position:absolute;right:11px;bottom:11px;z-index:9;width:42px;height:42px;border-radius:999px;
+  border:1px solid var(--acc);background:color-mix(in srgb,var(--acc) 16%,rgba(10,8,6,.85));color:var(--acc-hot);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;backdrop-filter:blur(4px)}
+.refresh-fab svg{width:19px;height:19px}
+.refresh-fab:hover{background:var(--acc);color:#15100b;transform:rotate(-90deg)}
 
 /* ── ГОЛОВНА КНОПКА ── */
-.action{width:100%;max-width:440px;position:relative}
+.action{width:100%;max-width:420px;position:relative}
 .mainbtn{width:100%;font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.06em;
-  padding:17px 20px;border-radius:13px;cursor:pointer;transition:.18s;border:1px solid rgba(201,168,118,.6);
-  background:linear-gradient(160deg,rgba(201,168,118,.3),rgba(201,168,118,.12));color:var(--gold-hot);
-  display:flex;align-items:center;justify-content:center;gap:10px;text-transform:uppercase}
-.mainbtn:hover{border-color:var(--gold-hot);box-shadow:0 0 30px rgba(201,168,118,.3);
-  background:linear-gradient(160deg,rgba(201,168,118,.4),rgba(201,168,118,.18))}
+  padding:18px 20px;border-radius:13px;cursor:pointer;transition:.18s;
+  border:1px solid color-mix(in srgb,var(--acc) 60%,transparent);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 30%,transparent),color-mix(in srgb,var(--acc) 12%,transparent));
+  color:var(--acc-hot);display:flex;align-items:center;justify-content:center;gap:10px;text-transform:uppercase}
+.mainbtn:hover{border-color:var(--acc-hot);box-shadow:0 0 32px color-mix(in srgb,var(--acc) 32%,transparent)}
 .mainbtn svg{width:19px;height:19px;flex:0 0 auto}
 .menu{position:absolute;left:0;right:0;bottom:calc(100% + 9px);background:var(--panel);
-  border:1px solid rgba(201,168,118,.4);border-radius:13px;padding:13px;z-index:40;
-  box-shadow:0 -12px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:9px}
-.menu-t{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--gold-dim);text-transform:uppercase}
-.menu .row{display:flex;gap:8px}
-.menu .row button{flex:1}
+  border:1px solid color-mix(in srgb,var(--acc) 42%,transparent);border-radius:13px;padding:14px;z-index:40;
+  box-shadow:0 -12px 40px rgba(0,0,0,.65);display:flex;flex-direction:column;gap:10px}
+.menu-t{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--acc-dim);text-transform:uppercase}
+.menu .row{display:flex;gap:8px}.menu .row button{flex:1}
+.menu input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--parchment);
+  font-family:var(--mono);font-size:14px;padding:11px 13px;outline:none}
+.menu input:focus{border-color:var(--acc)}
 .b{font-family:var(--mono);font-size:12.5px;font-weight:600;padding:11px 12px;border-radius:9px;
   border:1px solid var(--line);cursor:pointer;background:transparent;color:var(--muted);transition:.15s}
-.b:hover{color:var(--gold-hot);border-color:var(--gold-dim)}
-.b.on{background:rgba(201,168,118,.16);color:var(--gold-hot);border-color:rgba(201,168,118,.4)}
+.b:hover{color:var(--acc-hot);border-color:var(--acc-dim)}
+.b.on{background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acc-hot);border-color:color-mix(in srgb,var(--acc) 42%,transparent)}
 .b.wide{width:100%}
-.b.gold{background:linear-gradient(160deg,rgba(201,168,118,.22),rgba(201,168,118,.08));
-  border-color:rgba(201,168,118,.5);color:var(--gold-hot)}
+.b.gold{background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 24%,transparent),color-mix(in srgb,var(--acc) 8%,transparent));
+  border-color:color-mix(in srgb,var(--acc) 52%,transparent);color:var(--acc-hot)}
 
-/* ── сегменти / селекти ── */
 .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
 .seg.col{flex-direction:column}
 .seg button{flex:1;background:transparent;border:0;color:var(--muted);font-family:var(--mono);
-  font-size:12px;font-weight:600;padding:10px 6px;cursor:pointer;transition:.15s;text-align:left}
+  font-size:12px;font-weight:600;padding:11px 7px;cursor:pointer;transition:.15s;text-align:left}
 .seg:not(.col) button{border-right:1px solid var(--line);text-align:center}
 .seg.col button{border-bottom:1px solid var(--line)}
 .seg button:last-child{border-right:0;border-bottom:0}
-.seg button.on{background:rgba(201,168,118,.16);color:var(--gold-hot)}
-.seg button:hover:not(.on){color:var(--gold-hot)}
-.seg .lbl{font-size:14px;font-weight:700}
-.seg .sub{display:block;font-size:9.5px;font-weight:400;color:var(--gold-dim);letter-spacing:.05em;margin-top:2px}
-.seg button.on .sub{color:var(--gold)}
+.seg button.on{background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acc-hot)}
+.seg button:hover:not(.on){color:var(--acc-hot)}
+.seg .lbl{font-size:15px;font-weight:700}
+.seg .sub{display:block;font-size:9.5px;font-weight:400;color:var(--acc-dim);letter-spacing:.05em;margin-top:2px}
+.seg button.on .sub{color:var(--acc)}
 select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--parchment);
-  font-family:var(--mono);font-size:12.5px;padding:9px 11px;outline:none}
-select:focus{border-color:var(--gold)}
+  font-family:var(--mono);font-size:12.5px;padding:10px 12px;outline:none}
+select:focus{border-color:var(--acc)}
 select:disabled{opacity:.32}
-.emoji{display:flex;flex-wrap:wrap;gap:5px}
-.emoji button{padding:6px 9px;font-size:15px;line-height:1;min-width:34px;border:1px solid var(--line);
+.emoji{display:flex;flex-wrap:wrap;gap:6px}
+.emoji button{padding:7px 10px;font-size:16px;line-height:1;min-width:37px;border:1px solid var(--line);
   border-radius:7px;background:transparent;cursor:pointer;color:var(--parchment)}
-.emoji button:hover{border-color:var(--gold);background:rgba(201,168,118,.1)}
-.stat{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;flex-direction:column;
-  gap:5px;border-top:1px solid var(--line);padding-top:12px}
-.stat b{color:var(--gold);font-weight:600}
-.stat .big{font-size:15px;color:var(--gold-hot)}
+.emoji button:hover{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 12%,transparent)}
+.stat{font-family:var(--mono);font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;
+  gap:6px;border-top:1px solid var(--line);padding-top:13px}
+.stat b{color:var(--acc);font-weight:600}
+.stat .big{font-size:16px;color:var(--acc-hot)}
 .warn{color:#e5a053;display:none}
-.flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:200;transition:opacity .3s}
+.flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:200;transition:opacity .28s}
 
-@media(max-width:1020px){
-  .app{grid-template-columns:1fr;max-width:600px}
+@media(max-width:1080px){
+  .app{grid-template-columns:1fr;max-width:620px}
   .side{border:0!important;border-top:1px solid var(--line)!important;order:3}
   .side.left{order:2}
-  .center{order:1;padding-top:16px}
-  .stage{max-width:min(70vw,380px)}
+  .center{order:1;padding-top:14px}
+  .stage{max-width:min(68vw,360px)}
   .nav{flex-wrap:wrap;height:auto;padding:10px 16px;gap:10px}
-  .tabs button{padding:8px 11px;font-size:11.5px}
+  .tabs button{padding:8px 12px;font-size:11.5px}
 }
 </style>
 </head>
-<body>
+<body class="room-byte">
 
 <header><div class="nav">
   <button class="mark" id="home-btn" title="На початок">taina</button>
@@ -170,16 +213,17 @@ select:disabled{opacity:.32}
     <button data-gen="seal">Печатка</button>
     <button data-gen="spec">Spectrum</button>
   </div>
-  <div class="navright">
-    <button class="chip" id="scan-chip">⌖ Сканувати</button>
-  </div>
+  <div class="navright"><button class="chip" id="scan-chip">⌖ Сканувати</button></div>
 </div></header>
 
 <div class="app">
 
-  <!-- ЛІВОРУЧ -->
   <aside class="side left">
-    <!-- байткод -->
+    <div class="grp">
+      <div class="roomname" id="roomname">Байткод</div>
+      <p class="desc" id="principle"></p>
+    </div>
+
     <div id="p-byte" class="grp">
       <div class="grp">
         <div class="sec-t">Шари</div>
@@ -191,26 +235,22 @@ select:disabled{opacity:.32}
       <div class="grp">
         <div class="sec-t">Симетрія</div>
         <div class="seg col" id="sym">
-          <button data-m="oct" class="on"><span class="lbl">×8</span><span class="sub">октант · орнамент</span></button>
+          <button data-m="oct" class="on"><span class="lbl">×8</span><span class="sub">октант · мандала</span></button>
           <button data-m="quad"><span class="lbl">×4</span><span class="sub">дзеркала</span></button>
-          <button data-m="half"><span class="lbl">×2</span><span class="sub">рядок</span></button>
+          <button data-m="half"><span class="lbl">×2</span><span class="sub">рядок дзеркальний</span></button>
+          <button data-m="row"><span class="lbl">×1</span><span class="sub">рядок на символ</span></button>
         </div>
       </div>
     </div>
-    <!-- печатка -->
+
     <div id="p-seal" class="grp hide">
-      <div class="sec-t">Печатка</div>
-      <button class="b wide" id="seal-refresh">↻ Новий візерунок</button>
-    </div>
-    <!-- spectrum -->
-    <div id="p-spec" class="grp hide">
-      <div class="sec-t">Spectrum</div>
-      <p class="desc">Три QR-коди в трьох каналах RGB. Кожен канал можна замкнути власним паролем — ключ ліворуч від поля.</p>
+      <div class="sec-t">Візерунок</div>
+      <p class="desc">Декоративна мандала щоразу нова. Кнопка <b>↻</b> у куті полотна дає інший варіант для того самого тексту.</p>
     </div>
 
-    <div class="grp">
-      <div class="sec-t">Принцип</div>
-      <p class="desc" id="principle"></p>
+    <div id="p-spec" class="grp hide">
+      <div class="sec-t">Канали</div>
+      <p class="desc">Три QR-коди в трьох каналах. Обери канал угорі, введи текст. Ключ ліворуч замикає <b>саме цей</b> канал.</p>
     </div>
 
     <div class="stat">
@@ -221,68 +261,48 @@ select:disabled{opacity:.32}
     </div>
   </aside>
 
-  <!-- ЦЕНТР -->
   <main class="center">
-    <div class="txtwrap">
-      <!-- байткод: 1 шар -->
-      <div id="in-single"><input type="text" id="t-single" class="inp big" maxlength="50" value="ТАЇНА" placeholder="Напиши щось…" autocomplete="off" spellcheck="false"></div>
-      <!-- байткод: 3 шари -->
-      <div id="in-triple" class="hide">
-        <div class="chrow"><span class="chdot" style="background:var(--ch-r)"></span><input type="text" id="t-r" class="inp" maxlength="50" value="ТАЇНА" placeholder="червоний шар…" autocomplete="off" spellcheck="false"></div>
-        <div class="chrow"><span class="chdot" style="background:var(--ch-g)"></span><input type="text" id="t-g" class="inp" maxlength="50" placeholder="зелений шар…" autocomplete="off" spellcheck="false"></div>
-        <div class="chrow"><span class="chdot" style="background:var(--ch-b)"></span><input type="text" id="t-b" class="inp" maxlength="50" placeholder="синій шар…" autocomplete="off" spellcheck="false"></div>
-        <div style="display:flex;justify-content:center;margin-top:2px"><button class="b" id="split-btn">⑂ Розділити верхній текст на 3</button></div>
-      </div>
-      <!-- печатка -->
-      <div id="in-seal" class="hide">
-        <input type="text" id="t-seal" class="inp big" maxlength="300" placeholder="Текст таємниці…" autocomplete="off" spellcheck="false">
-        <div class="chrow" style="margin-top:9px">
-          <button class="keybtn" id="seal-key" disabled aria-label="ключ"></button>
-          <input type="text" id="p-seal-pass" class="inp" maxlength="12" placeholder="ключ (необов'язково)" autocomplete="off" style="text-align:center;letter-spacing:.25em">
-        </div>
-      </div>
-      <!-- spectrum -->
-      <div id="in-spec" class="hide">
-        <div class="chrow"><span class="chdot" style="background:var(--ch-r)"></span>
-          <button class="keybtn" id="k-r" disabled aria-label="ключ R"></button>
-          <input type="text" id="s-r" class="inp" maxlength="300" placeholder="червоний канал…" autocomplete="off" spellcheck="false"></div>
-        <div class="chrow"><span class="chdot" style="background:var(--ch-g)"></span>
-          <button class="keybtn" id="k-g" disabled aria-label="ключ G"></button>
-          <input type="text" id="s-g" class="inp" maxlength="300" placeholder="зелений канал…" autocomplete="off" spellcheck="false"></div>
-        <div class="chrow"><span class="chdot" style="background:var(--ch-b)"></span>
-          <button class="keybtn" id="k-b" disabled aria-label="ключ B"></button>
-          <input type="text" id="s-b" class="inp" maxlength="300" placeholder="синій канал…" autocomplete="off" spellcheck="false"></div>
+    <div class="txtzone">
+      <div class="chtabs" id="chtabs"></div>
+      <div class="inrow">
+        <button class="keybtn invis" id="keybtn" aria-label="ключ"></button>
+        <input type="text" id="tmain" class="inp" maxlength="300" placeholder="Напиши щось…" autocomplete="off" spellcheck="false">
+        <button class="keybtn invis" id="lockbtn" aria-label="замкнути"></button>
       </div>
       <div class="rt" id="rt"></div>
     </div>
 
-    <!-- ХОЛСТ: завжди на місці -->
     <div class="stage" id="stage">
       <canvas id="cv" width="512" height="512"></canvas>
       <video id="vid" playsinline class="hide"></video>
       <div class="corner c-tl"></div><div class="corner c-tr"></div>
       <div class="corner c-bl"></div><div class="corner c-br"></div>
-      <div class="laser hide" id="laser"></div>
+      <div class="scanline"></div>
+      <button class="refresh-fab hide" id="refresh-fab" title="Новий візерунок">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg>
+      </button>
+      <div class="lockveil" id="lockveil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        <p>Потрібен ключ</p>
+      </div>
       <div class="overlay hide" id="ovl">
         <p class="desc" id="ovl-text"></p>
         <div style="display:flex;gap:9px"><button class="b" id="ovl-a"></button><button class="b" id="ovl-b"></button></div>
       </div>
     </div>
 
-    <!-- ГОЛОВНА КНОПКА -->
     <div class="action">
       <div class="menu hide" id="menu"></div>
       <button class="mainbtn" id="mainbtn"></button>
     </div>
   </main>
 
-  <!-- ПРАВОРУЧ -->
   <aside class="side right">
     <div class="grp" id="look-grp">
       <div class="sec-t">Вигляд</div>
-      <div class="row" style="display:flex;gap:7px">
+      <div style="display:flex;gap:7px">
         <button class="b" id="posneg" style="flex:1">◐ Нег/Поз</button>
-        <button class="b" id="framebtn" style="flex:1">▢ Рамка</button>
+        <button class="b on" id="framebtn" style="flex:1">▢ Рамка</button>
       </div>
       <div class="seg" id="shape">
         <button data-s="square" class="on">Квадрат</button>
@@ -313,20 +333,26 @@ select:disabled{opacity:.32}
 <div class="flash" id="flash"></div>
 
 <script>
-/* =====================================================================
-   TAINA STUDIO — спільне ядро для трьох генераторів
-   ===================================================================== */
+/* ═══════════════ TAINA STUDIO ═══════════════ */
 const $=id=>document.getElementById(id);
 const enc=new TextEncoder();
 const decFatal=new TextDecoder('utf-8',{fatal:true});
+const CH=['r','g','b'];
+const CHNAME={r:'червоний',g:'зелений',b:'синій'};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-/* ---------- стан ---------- */
-let GEN='byte';                 // byte | seal | spec
-let scanning=false, stream=null, rafId=null;
-let hasImage=false;             // чи є що зберігати
-let menuOpen=false;
+/* ── стан ── */
+let GEN='byte', curCh=0, keyMode=false, busy=false;
+let hasImage=false, menuOpen=false;
+let scanning=false, stream=null, rafId=null, pendingCipher=null;
 
-/* ---------- холст ---------- */
+const D={
+  byte:{single:'ТАЇНА', ch:['ТАЇНА','','']},
+  seal:{text:'', pass:''},
+  spec:{ch:['','',''], pass:['','',''], plain:['','','']}
+};
+
+/* ── холст ── */
 const CV=$('cv'), CTX=CV.getContext('2d',{willReadFrequently:true});
 const OFF=document.createElement('canvas'), OCTX=OFF.getContext('2d',{willReadFrequently:true});
 function blit(){
@@ -335,60 +361,91 @@ function blit(){
   if(!OFF.width)return;
   const s=Math.min(CV.width/OFF.width,CV.height/OFF.height);
   const w=OFF.width*s,h=OFF.height*s;
-  CTX.drawImage(OFF,0,0,OFF.width,OFF.height,(CV.width-w)/2,(CV.height-h)/2,w,h);
-}
-function clearStage(){OFF.width=OFF.height=0;hasImage=false;blit();syncMain();}
+  CTX.drawImage(OFF,0,0,OFF.width,OFF.height,(CV.width-w)/2,(CV.height-h)/2,w,h);}
+function clearStage(){OFF.width=OFF.height=0;hasImage=false;blit();syncMain();
+  $('stage').classList.remove('revealed','locked','scanning');}
 
-/* ---------- звук/спалах ---------- */
-function beep(f=880,d=.15){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;
-  const c=new A(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);
-  o.frequency.value=f;o.type='sine';g.gain.setValueAtTime(.1,c.currentTime);
-  g.gain.exponentialRampToValueAtTime(.00001,c.currentTime+d);o.start();o.stop(c.currentTime+d);}catch(e){}}
-function okSound(){beep(880,.1);setTimeout(()=>beep(1200,.18),100)}
-function failSound(){beep(220,.35);setTimeout(()=>beep(180,.35),140)}
-function flash(){const f=$('flash');f.style.opacity='.75';setTimeout(()=>f.style.opacity='0',260)}
+/* ── звук ── */
+let AC=null;
+function ac(){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();
+  if(AC.state==='suspended')AC.resume();return AC}catch(e){return null}}
+function tone(f,d=.15,vol=.09,type='sine'){
+  const c=ac();if(!c)return;
+  const o=c.createOscillator(),g=c.createGain();
+  o.type=type;o.frequency.value=f;o.connect(g);g.connect(c.destination);
+  g.gain.setValueAtTime(vol,c.currentTime);
+  g.gain.exponentialRampToValueAtTime(.00001,c.currentTime+d);
+  o.start();o.stop(c.currentTime+d);}
+function keyClick(){tone(1750+Math.random()*260,.014,.035,'square')}
+function typeClick(){tone(1450+Math.random()*420,.016,.045,'triangle')}
+function okChime(){tone(660,.1,.08);setTimeout(()=>tone(880,.11,.08),90);setTimeout(()=>tone(1320,.28,.07),190)}
+function failSound(){tone(220,.32,.09,'sawtooth');setTimeout(()=>tone(165,.36,.08,'sawtooth'),140)}
+function lockSound(){tone(1900,.03,.07);setTimeout(()=>tone(620,.14,.09),45)}
+let hum=null;
+function startHum(dur=1.5){
+  const c=ac();if(!c)return;
+  try{
+    const o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();
+    o.type='sawtooth';f.type='lowpass';f.frequency.value=900;
+    o.frequency.setValueAtTime(110,c.currentTime);
+    o.frequency.linearRampToValueAtTime(430,c.currentTime+dur);
+    g.gain.setValueAtTime(.0001,c.currentTime);
+    g.gain.linearRampToValueAtTime(.045,c.currentTime+.12);
+    o.connect(f);f.connect(g);g.connect(c.destination);o.start();
+    hum={o,g,c};
+  }catch(e){}}
+function stopHum(){if(!hum)return;try{
+  hum.g.gain.exponentialRampToValueAtTime(.00001,hum.c.currentTime+.18);
+  hum.o.stop(hum.c.currentTime+.24);}catch(e){}hum=null;}
+function flash(){const f=$('flash');f.style.opacity='.7';setTimeout(()=>f.style.opacity='0',240)}
 
-/* ---------- КРИПТО (AES-GCM + PBKDF2) ---------- */
+/* ── друк тексту по літері ── */
+function typeOut(el,text,speed=36){
+  return new Promise(res=>{
+    el.value='';let i=0;
+    if(!text.length){res();return}
+    const t=setInterval(()=>{
+      el.value=text.slice(0,++i);
+      if(i%2===1)typeClick();
+      if(i>=text.length){clearInterval(t);res()}
+    },speed);});}
+
+/* ── КРИПТО ── */
 const PBKDF2_ITER=390000;
-async function deriveKey(pass,salt,use){
-  const km=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
+async function deriveKey(p,salt,use){
+  const km=await crypto.subtle.importKey('raw',enc.encode(p),'PBKDF2',false,['deriveKey']);
   return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:PBKDF2_ITER,hash:'SHA-256'},km,
     {name:'AES-GCM',length:256},false,[use]);}
-async function encryptText(txt,pass){
+async function encryptText(t,p){
   const salt=crypto.getRandomValues(new Uint8Array(16));
   const iv=crypto.getRandomValues(new Uint8Array(12));
-  const key=await deriveKey(pass,salt,'encrypt');
-  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(txt)));
+  const k=await deriveKey(p,salt,'encrypt');
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,enc.encode(t)));
   const all=new Uint8Array(28+ct.length);all.set(salt,0);all.set(iv,16);all.set(ct,28);
-  let bin='';for(const b of all)bin+=String.fromCharCode(b);
-  return btoa(bin);}
-async function decryptText(b64,pass){
-  try{
-    const bs=atob(b64),all=new Uint8Array(bs.length);
+  let b='';for(const x of all)b+=String.fromCharCode(x);return btoa(b);}
+async function decryptText(b64,p){
+  try{const bs=atob(b64),all=new Uint8Array(bs.length);
     for(let i=0;i<bs.length;i++)all[i]=bs.charCodeAt(i);
-    const key=await deriveKey(pass,all.slice(0,16),'decrypt');
-    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:all.slice(16,28)},key,all.slice(28));
-    return new TextDecoder().decode(pt);
-  }catch(e){return null}}
+    const k=await deriveKey(p,all.slice(0,16),'decrypt');
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:all.slice(16,28)},k,all.slice(28));
+    return new TextDecoder().decode(pt);}catch(e){return null}}
 
-/* =====================================================================
-   ГЕНЕРАТОР 1 — БАЙТКОД (октант з бітів UTF-8)
-   ===================================================================== */
+/* ═══════════ БАЙТКОД ═══════════ */
 const END=0xFF, MAXLEN=400, MAXN=145;
-const CH=['r','g','b'];
-let bMode='oct', bLayers=1, bN=25, bGrid={r:null,g:null,b:null}, bBodyR=0;
-let shape='square', pal='mono', neg=false, frame=false;
+let bMode='oct', bLayers=1, bW=25, bH=25, bGrid={r:null,g:null,b:null}, bBodyR=0, bMaxB=1;
+let shape='square', pal='mono', neg=false, frame=true;
 
 function Rof(n){return (n-1)/2}
 function capacity(m,n){const R=Rof(n);
   if(m==='oct')return (R+1)*(R+2)/2;
   if(m==='quad')return (R+1)*(R+1);
-  return (R+1)*n;}
-function baseCells(m,n){const c=Rof(n),R=c,out=[];
-  if(m==='oct'){for(let i=0;i<=R;i++)for(let j=0;j<=i;j++)out.push([c+i,c+j]);}
-  else if(m==='quad'){for(let i=0;i<=R;i++)for(let j=0;j<=R;j++)out.push([c+i,c+j]);}
-  else{for(let y=0;y<n;y++)for(let i=0;i<=R;i++)out.push([c+i,y]);}
-  return out;}
+  if(m==='half')return (R+1)*n;
+  return 0;}
+function baseCells(m,n){const c=Rof(n),R=c,o=[];
+  if(m==='oct'){for(let i=0;i<=R;i++)for(let j=0;j<=i;j++)o.push([c+i,c+j]);}
+  else if(m==='quad'){for(let i=0;i<=R;i++)for(let j=0;j<=R;j++)o.push([c+i,c+j]);}
+  else{for(let y=0;y<n;y++)for(let i=0;i<=R;i++)o.push([c+i,y]);}
+  return o;}
 function mirror(m,n,x,y,g){const c=Rof(n),i=x-c,j=y-c;let p;
   if(m==='oct')p=[[i,j],[j,i],[-i,j],[-j,i],[i,-j],[j,-i],[-i,-j],[-j,-i]];
   else if(m==='quad')p=[[i,j],[-i,j],[i,-j],[-i,-j]];
@@ -400,17 +457,38 @@ function toBits(t){const body=enc.encode(t);const by=new Uint8Array(body.length+
   const bits=new Uint8Array(by.length*8);
   for(let i=0;i<by.length;i++)for(let b=0;b<8;b++)bits[i*8+b]=(by[i]>>(7-b))&1;
   return {nby:body.length,bits};}
-function readBase(g,n,m){const bc=baseCells(m,n),o=new Uint8Array(bc.length);
-  for(let k=0;k<bc.length;k++){const [x,y]=bc[k];o[k]=g[y*n+x]?1:0;}return o;}
 function isClean(t){for(const ch of t){const o=ch.codePointAt(0);
   if(o===0)return false;if(o<32&&ch!=='\n'&&ch!=='\t')return false;}return true;}
 function decodeOctant(g,n,m){
-  const bits=readBase(g,n,m),nb=bits.length>>3,buf=[];
+  const bc=baseCells(m,n),bits=new Uint8Array(bc.length);
+  for(let k=0;k<bc.length;k++){const [x,y]=bc[k];bits[k]=g[y*n+x]?1:0;}
+  const nb=bits.length>>3,buf=[];
   for(let i=0;i<nb;i++){let v=0;for(let b=0;b<8;b++)v=(v<<1)|bits[i*8+b];
     if(v===END){if(!buf.length||buf.length>MAXLEN)return null;
       try{const t=decFatal.decode(new Uint8Array(buf));return isClean(t)?t:null}catch(e){return null}}
     buf.push(v);}
   return null;}
+
+/* режим ×1: рядок на символ */
+function rowBuild(text,maxB){
+  const chars=[...text];
+  const W=maxB*8,H=chars.length;
+  const g=new Uint8Array(W*Math.max(H,1));
+  chars.forEach((c,r)=>{const bs=enc.encode(c);
+    for(let i=0;i<maxB;i++){const v=i<bs.length?bs[i]:0;
+      for(let b=0;b<8;b++)g[r*W+i*8+b]=(v>>(7-b))&1;}});
+  return {g,W,H};}
+function rowDecode(g,W,H){
+  if(W%8)return null;
+  const maxB=W/8;if(maxB<1||maxB>4)return null;
+  let out='';
+  for(let r=0;r<H;r++){
+    const bs=[];
+    for(let i=0;i<maxB;i++){let v=0;for(let b=0;b<8;b++)v=(v<<1)|g[r*W+i*8+b];bs.push(v);}
+    while(bs.length&&bs[bs.length-1]===0)bs.pop();
+    if(!bs.length)continue;
+    try{out+=decFatal.decode(new Uint8Array(bs))}catch(e){return null}}
+  return (out&&isClean(out))?out:null;}
 
 const PAL={mono:null,p2gold:['#e8c890','#35d0c8'],p2fire:['#ff7a3c','#4bc4e8'],
   p3:['#e5556f','#e8c14a','#4bc4e8'],p4:['#e5556f','#e8a24a','#6dcf5a','#5a8ce0'],
@@ -418,67 +496,87 @@ const PAL={mono:null,p2gold:['#e8c890','#35d0c8'],p2fire:['#ff7a3c','#4bc4e8'],
 function byteColors(){
   if(neg)return {bg:'#ede3d0',ink:'#141414',fg:PAL[pal]||['#141414']};
   return {bg:'#0d0a08',ink:'#e8e0d0',fg:PAL[pal]||['#e8e0d0']};}
-
-function byteTexts(){return bLayers===1?[$('t-single').value,'','']:[$('t-r').value,$('t-g').value,$('t-b').value];}
+function byteTexts(){return bLayers===1?[D.byte.single,'','']:D.byte.ch.slice()}
 
 function buildByte(){
   const T=byteTexts();
-  if(!T.some(t=>t.length)){clearStage();$('s-by').textContent=0;$('s-fld').textContent='—';
-    $('s-cap').textContent=capacity(bMode,25);$('s-warn').style.display='none';$('rt').innerHTML='';return;}
-  let need=0,tot=0;
-  for(const t of T){if(!t)continue;const r=toBits(t);need=Math.max(need,r.bits.length);tot+=r.nby;}
-  bN=pickN(bMode,need);
-  let ovf=false,maxR=0;const c=Rof(bN);
-  CH.forEach((k,i)=>{
-    const g=new Uint8Array(bN*bN);
-    if(T[i]){const {bits}=toBits(T[i]);const bc=baseCells(bMode,bN);
-      if(bits.length>bc.length)ovf=true;
-      for(let idx=0;idx<bits.length&&idx<bc.length;idx++)if(bits[idx]){
-        const [x,y]=bc[idx];mirror(bMode,bN,x,y,g);
-        const lr=Math.round(Math.hypot(x-c,y-c));if(lr>maxR)maxR=lr;}}
-    bGrid[k]=g;});
-  bBodyR=maxR;
-  $('s-by').textContent=tot;$('s-fld').textContent=bN+'×'+bN;
-  $('s-cap').textContent=capacity(bMode,bN);$('s-warn').style.display=ovf?'block':'none';
+  if(!T.some(t=>t.length)){clearStage();
+    $('s-by').textContent=0;$('s-fld').textContent='—';$('s-cap').textContent='0';
+    $('s-warn').style.display='none';$('rt').innerHTML='';return;}
+  let tot=0;T.forEach(t=>{if(t)tot+=enc.encode(t).length});
+  let ovf=false;
+  if(bMode==='row'){
+    bMaxB=1;
+    T.forEach(t=>{for(const c of t){const n=enc.encode(c).length;if(n>bMaxB)bMaxB=n}});
+    const H=Math.max(...T.map(t=>[...t].length),1);
+    bW=bMaxB*8;bH=H;
+    CH.forEach((k,i)=>{
+      const r=rowBuild(T[i]||'',bMaxB);
+      const g=new Uint8Array(bW*bH);g.set(r.g.subarray(0,Math.min(r.g.length,g.length)));
+      bGrid[k]=g;});
+    bBodyR=0;
+    $('s-fld').textContent=bW+'×'+bH;
+    $('s-cap').textContent='—';
+  }else{
+    let need=0;
+    T.forEach(t=>{if(t)need=Math.max(need,toBits(t).bits.length)});
+    const n=pickN(bMode,need);bW=bH=n;
+    let maxR=0;const c=Rof(n);
+    CH.forEach((k,i)=>{
+      const g=new Uint8Array(n*n);
+      if(T[i]){const {bits}=toBits(T[i]);const bc=baseCells(bMode,n);
+        if(bits.length>bc.length)ovf=true;
+        for(let idx=0;idx<bits.length&&idx<bc.length;idx++)if(bits[idx]){
+          const [x,y]=bc[idx];mirror(bMode,n,x,y,g);
+          const lr=Math.round(Math.hypot(x-c,y-c));if(lr>maxR)maxR=lr;}}
+      bGrid[k]=g;});
+    bBodyR=maxR;
+    $('s-fld').textContent=n+'×'+n;
+    $('s-cap').textContent=capacity(bMode,n);}
+  $('s-by').textContent=tot;
+  $('s-warn').style.display=ovf?'block':'none';
   renderByte();
-  const got=CH.map(k=>decodeOctant(bGrid[k],bN,bMode));
+  const got=CH.map(k=>bMode==='row'?rowDecode(bGrid[k],bW,bH):decodeOctant(bGrid[k],bW,bMode));
   const ok=CH.every((k,i)=>(got[i]||'')===(T[i]||''));
-  $('rt').innerHTML=ok?'<span class="g">✓ читається назад</span>':'<span class="r">розбіжність</span>';
+  $('rt').innerHTML=ok?'<span class="g">✓ читається назад</span>':'<span class="w">перевір текст</span>';
   hasImage=true;syncMain();}
 
-function paintByte(ctx,cell,pad,bg){
-  const c=Rof(bN);
+function paintByte(ctx,cell,pad,drawBg){
+  const c=Rof(bW);
   const put=(x,y,col)=>{ctx.fillStyle=col;const px=(x+pad)*cell,py=(y+pad)*cell;
     if(shape==='circle'){ctx.beginPath();ctx.arc(px+cell/2,py+cell/2,cell/2*.92,0,6.2832);ctx.fill();}
     else ctx.fillRect(px,py,cell,cell);};
+  const TW=(bW+pad*2)*cell, TH=(bH+pad*2)*cell;
   if(bLayers===3){
-    if(bg){ctx.fillStyle=frame?'#b8b2a6':'#000';ctx.fillRect(0,0,(bN+pad*2)*cell,(bN+pad*2)*cell);
-      ctx.fillStyle='#000';ctx.fillRect(pad*cell,pad*cell,bN*cell,bN*cell);}
-    for(let y=0;y<bN;y++)for(let x=0;x<bN;x++){const i=y*bN+x;
+    if(drawBg){ctx.fillStyle=frame?'#b8b2a6':'#000';ctx.fillRect(0,0,TW,TH);
+      ctx.fillStyle='#000';ctx.fillRect(pad*cell,pad*cell,bW*cell,bH*cell);}
+    for(let y=0;y<bH;y++)for(let x=0;x<bW;x++){const i=y*bW+x;
       const R=bGrid.r[i]?255:0,G=bGrid.g[i]?255:0,B=bGrid.b[i]?255:0;
       if(!R&&!G&&!B)continue;put(x,y,`rgb(${R},${G},${B})`);}
     return;}
   const {bg:BG,ink,fg}=byteColors();
-  if(bg){ctx.fillStyle=frame?'#b8b2a6':BG;ctx.fillRect(0,0,(bN+pad*2)*cell,(bN+pad*2)*cell);
-    ctx.fillStyle=BG;ctx.fillRect(pad*cell,pad*cell,bN*cell,bN*cell);}
+  if(drawBg){ctx.fillStyle=frame?'#b8b2a6':BG;ctx.fillRect(0,0,TW,TH);
+    ctx.fillStyle=BG;ctx.fillRect(pad*cell,pad*cell,bW*cell,bH*cell);}
   const R2=(bBodyR+.5)*(bBodyR+.5);
-  for(let y=0;y<bN;y++)for(let x=0;x<bN;x++){
-    const on=bGrid.r[y*bN+x];let col;
-    if(on)col=fg.length>1?fg[Math.round(Math.hypot(x-c,y-c))%fg.length]:fg[0];
-    else{const inB=((x-c)*(x-c)+(y-c)*(y-c))<=R2;if(!inB)continue;if(!neg&&pal==='mono')continue;col=ink;}
+  for(let y=0;y<bH;y++)for(let x=0;x<bW;x++){
+    const on=bGrid.r[y*bW+x];let col;
+    if(on)col=fg.length>1?fg[Math.round(Math.hypot(x-c,y-Rof(bH)))%fg.length]:fg[0];
+    else{
+      if(bMode==='row')continue;
+      const inB=((x-c)*(x-c)+(y-c)*(y-c))<=R2;if(!inB)continue;
+      if(!neg&&pal==='mono')continue;col=ink;}
     put(x,y,col);}}
 
 function renderByte(){
-  const pad=frame?2:0,total=bN+pad*2;
-  const cell=Math.max(1,Math.floor(700/total));
-  OFF.width=OFF.height=total*cell;
+  const pad=frame?2:0;
+  const tw=bW+pad*2, th=bH+pad*2;
+  const cell=Math.max(1,Math.floor(760/Math.max(tw,th)));
+  OFF.width=tw*cell;OFF.height=th*cell;
   OCTX.imageSmoothingEnabled=false;
   paintByte(OCTX,cell,pad,true);
   blit();}
 
-/* =====================================================================
-   ГЕНЕРАТОР 2 — ПЕЧАТКА (мандала, QR у синьому каналі)
-   ===================================================================== */
+/* ═══════════ ПЕЧАТКА ═══════════ */
 const PATTERNS=[
 [[0,1,0,1,0,1,0],[1,0,0,0,0,0,1],[0,0,1,1,1,0,0],[1,0,1,1,1,0,1],[0,0,1,1,1,0,0],[1,0,0,0,0,0,1],[0,1,0,1,0,1,0]],
 [[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0],[0,1,1,0,1,1,0]],
@@ -515,17 +613,14 @@ function genMask(size){
       m[cy+y][cx-x]=1;m[cy+x][cx-y]=1;m[cy-y][cx-x]=1;m[cy-x][cx-y]=1;}}
   return m;}
 
-let sealPass='';
 async function buildSeal(){
-  const t=$('t-seal').value.trim();
+  const t=D.seal.text.trim();
   if(!t){clearStage();$('s-by').textContent=0;$('s-fld').textContent='—';$('rt').innerHTML='';return;}
-  const p=sealPass.trim();
-  const data = p ? '|'+await encryptText(t,p) : t;
+  const p=D.seal.pass.trim();
+  const data=p?'|'+await encryptText(t,p):t;
   drawSeal(data);
   $('s-by').textContent=enc.encode(t).length;
-  $('rt').innerHTML = p
-    ? '<span class="g">🔒 зашифровано ключем</span>'
-    : '<span class="g">✓ готово · без ключа</span>';
+  $('rt').innerHTML=p?'<span class="g">🔒 зашифровано ключем</span>':'<span class="g">✓ готово · без ключа</span>';
   hasImage=true;syncMain();}
 
 function drawSeal(dataString){
@@ -534,9 +629,9 @@ function drawSeal(dataString){
     const qr=qrcode(0,'M');qr.addData(utf8);qr.make();
     const mc=qr.getModuleCount();
     const qz=2,fi=1,fo=2;
-    let orn=mc+qz*2; if(orn%2===0)orn+=1;
-    let total=orn+fi*2+fo*2; if(total%2===0)total+=1;
-    const cell=Math.max(2,Math.floor(700/total));
+    let orn=mc+qz*2;if(orn%2===0)orn+=1;
+    let total=orn+fi*2+fo*2;if(total%2===0)total+=1;
+    const cell=Math.max(2,Math.floor(760/total));
     OFF.width=OFF.height=total*cell;
     const c=OCTX;c.imageSmoothingEnabled=false;
     c.fillStyle='rgb(180,160,140)';c.fillRect(0,0,OFF.width,OFF.height);
@@ -550,62 +645,54 @@ function drawSeal(dataString){
       const inC=(qR>=0&&qR<mc&&qC>=0&&qC<mc);
       const vR=(mR[oR]&&mR[oR][oC])?210:35;
       const vG=(mG[oR]&&mG[oR][oC])?210:35;
-      let vB=35; if(inC)vB=qr.isDark(qR,qC)?210:35;
-      c.fillStyle=`rgb(${vR},${vG},${vB})`;
-      c.fillRect(k*cell,r*cell,cell,cell);}
+      let vB=35;if(inC)vB=qr.isDark(qR,qC)?210:35;
+      c.fillStyle=`rgb(${vR},${vG},${vB})`;c.fillRect(k*cell,r*cell,cell,cell);}
     $('s-fld').textContent=total+'×'+total;
     blit();
   }catch(e){console.error(e)}}
 
-/* =====================================================================
-   ГЕНЕРАТОР 3 — SPECTRUM (три QR у трьох каналах)
-   ===================================================================== */
-const specPass={r:'',g:'',b:''}, specPlain={r:'',g:'',b:''};
-async function specPayload(k){
-  const el=$('s-'+k), btn=$('k-'+k);
-  const encMode=btn.classList.contains('active')||btn.classList.contains('locked');
-  const raw=encMode?specPlain[k]:el.value;
+/* ═══════════ SPECTRUM ═══════════ */
+async function specPayload(i){
+  const raw=D.spec.plain[i]||D.spec.ch[i];
   if(!raw||!raw.trim())return '';
-  if(btn.classList.contains('locked')&&specPass[k]){
-    try{return 'SCI1:'+await encryptText(raw,specPass[k])}catch(e){return raw}}
+  if(D.spec.pass[i])
+    {try{return 'SCI1:'+await encryptText(raw,D.spec.pass[i])}catch(e){return raw}}
   return raw;}
-
 let specToken=0;
 async function buildSpec(){
   const my=++specToken;
-  const texts=await Promise.all(CH.map(specPayload));
+  const texts=await Promise.all([0,1,2].map(specPayload));
   if(my!==specToken)return;
-  if(!texts.some(t=>t.trim())){clearStage();$('s-by').textContent=0;$('s-fld').textContent='—';$('rt').innerHTML='';return;}
+  if(!texts.some(t=>t.trim())){clearStage();
+    $('s-by').textContent=0;$('s-fld').textContent='—';$('rt').innerHTML='';return;}
   let maxVer=1;
-  texts.forEach(t=>{if(!t.trim())return;try{const tmp=qrcode(0,'M');
-    tmp.addData(unescape(encodeURIComponent(t)));tmp.make();
-    const v=Math.floor((tmp.getModuleCount()-17)/4);if(v>maxVer)maxVer=v;}catch(e){}});
+  texts.forEach(t=>{if(!t.trim())return;try{const q=qrcode(0,'M');
+    q.addData(unescape(encodeURIComponent(t)));q.make();
+    const v=Math.floor((q.getModuleCount()-17)/4);if(v>maxVer)maxVer=v;}catch(e){}});
   const mats=texts.map(t=>{if(!t.trim())return null;
     try{const q=qrcode(maxVer,'M');q.addData(unescape(encodeURIComponent(t)));q.make();return q}catch(e){return null}});
   const first=mats.find(m=>m);if(!first)return;
   const count=first.getModuleCount();
-  const cell=Math.max(2,Math.floor(700/(count+4)));
+  const cell=Math.max(2,Math.floor(760/(count+4)));
   const S=(count+4)*cell;
   OFF.width=OFF.height=S;
   const c=OCTX;c.imageSmoothingEnabled=false;
   c.globalCompositeOperation='source-over';
   c.fillStyle='#000';c.fillRect(0,0,S,S);
   c.globalCompositeOperation='lighten';
-  const off2=2*cell;
+  const o2=2*cell;
   mats.forEach((q,i)=>{if(!q)return;
     c.fillStyle=i===0?'rgb(255,0,0)':(i===1?'rgb(0,255,0)':'rgb(0,0,255)');
     for(let r=0;r<count;r++)for(let k=0;k<count;k++)
-      if(q.isDark(r,k))c.fillRect(off2+k*cell,off2+r*cell,cell,cell);});
+      if(q.isDark(r,k))c.fillRect(o2+k*cell,o2+r*cell,cell,cell);});
   c.globalCompositeOperation='source-over';
   $('s-by').textContent=texts.reduce((a,t)=>a+enc.encode(t).length,0);
-  $('s-fld').textContent=count+'×'+count+' модулів';
-  const locked=CH.filter(k=>$('k-'+k).classList.contains('locked')).length;
+  $('s-fld').textContent=count+'×'+count+' мод.';
+  const locked=D.spec.pass.filter(p=>p).length;
   $('rt').innerHTML=locked?`<span class="g">🔒 замкнено каналів: ${locked}</span>`:'<span class="g">✓ готово</span>';
   blit();hasImage=true;syncMain();}
 
-/* =====================================================================
-   СКАНЕР — спільний для всіх (октант + QR з SCI-калібруванням)
-   ===================================================================== */
+/* ═══════════ СКАНЕР ═══════════ */
 function bradley(img,ch){
   const w=img.width,h=img.height,d=img.data;
   const o=new Uint8ClampedArray(w*h*4),ii=new Int32Array(w*h);
@@ -621,82 +708,112 @@ function bradley(img,ch){
   return new ImageData(o,w,h);}
 function sci(img,cfg){const d=img.data;
   for(let i=0;i<d.length;i+=4){
-    const r=d[i],g=d[i+1],b=d[i+2];
-    let t,n1,n2;
+    const r=d[i],g=d[i+1],b=d[i+2];let t,n1,n2;
     if(cfg.ch==='R'){t=r;n1=g;n2=b}else if(cfg.ch==='G'){t=g;n1=r;n2=b}else{t=b;n1=r;n2=g}
     let v=(t-(n1*cfg.k1+n2*cfg.k2))*cfg.gain+(cfg.offset||0);
     v=Math.max(0,Math.min(255,v));d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;}}
 function osc(t,per,mn,mx){const c=t%per,h=per/2;const p=c<h?c/h:(per-c)/h;return mn+p*(mx-mn)}
 const SCICFG={R:{k1:.10,k2:.20},G:{k1:.18,k2:.33},B:{k1:.05,k2:.13}};
-
-function tryQR(imgData,st){
-  let code=jsQR(imgData.data,imgData.width,imgData.height,{inversionAttempts:'attemptBoth'});
+function tryQR(img,st){
+  let code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
   if(code)return code.data;
   st.fail++;if(st.fail>30)st.active=true;
-  const chans=['B','R','G'];
-  const ch=chans[st.i++%3];
+  const ch=['B','R','G'][st.i++%3];
   if(st.active){
     st.t++;
     const cfg={...SCICFG[ch],ch,gain:osc(st.t,100,.5,3.5),offset:osc(st.t,250,-80,0)};
-    const w=new ImageData(new Uint8ClampedArray(imgData.data),imgData.width,imgData.height);
-    sci(w,cfg);
-    const mono=bradley(w,0);
-    code=jsQR(mono.data,imgData.width,imgData.height,{inversionAttempts:'attemptBoth'});
+    const w=new ImageData(new Uint8ClampedArray(img.data),img.width,img.height);
+    sci(w,cfg);const mono=bradley(w,0);
+    code=jsQR(mono.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
     if(code)return code.data;
   }else{
     const idx=ch==='R'?0:(ch==='G'?1:2);
-    const mono=bradley(imgData,idx);
-    code=jsQR(mono.data,imgData.width,imgData.height,{inversionAttempts:'attemptBoth'});
+    const mono=bradley(img,idx);
+    code=jsQR(mono.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
     if(code)return code.data;}
   return null;}
 
-/* спроба прочитати байткод-октант з довільної картинки */
 function tryByteFromImage(px,W,H){
-  const readCh=(n,ci,inv)=>{const g=new Uint8Array(n*n),sx=W/n,sy=H/n;
-    for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+  const read=(w,h,ci,inv)=>{const g=new Uint8Array(w*h),sx=W/w,sy=H/h;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const p=(Math.floor((y+.5)*sy)*W+Math.floor((x+.5)*sx))*4;
       let v=(ci<0?((px[p]+px[p+1]+px[p+2])/3):px[p+ci])>127?1:0;
-      if(inv)v=v?0:1;g[y*n+x]=v;}
+      if(inv)v=v?0:1;g[y*w+x]=v;}
     return g;};
-  for(let n=25;n<=MAXN;n+=2){
+  /* симетричні режими: квадрат */
+  if(W===H)for(let n=25;n<=MAXN;n+=2){
     if(W%n!==0)continue;
     for(const m of ['oct','quad','half']){
-      const res=[0,1,2].map(k=>decodeOctant(readCh(n,k,false),n,m));
-      if(res.filter(x=>x!==null).length>=2)return {kind:'byte3',n,m,res};
+      const res=[0,1,2].map(k=>decodeOctant(read(n,n,k,false),n,m));
+      if(res.filter(x=>x!==null).length>=2)return {kind:'b3',mode:m,res};
       for(const inv of [false,true]){
-        const t=decodeOctant(readCh(n,-1,inv),n,m);
-        if(t!==null)return {kind:'byte1',n,m,res:[t,null,null]};}}}
+        const t=decodeOctant(read(n,n,-1,inv),n,m);
+        if(t!==null)return {kind:'b1',mode:m,res:[t,null,null]};}}}
+  /* режим ×1: смуга */
+  for(const wm of [8,16,24,32]){
+    if(W%wm!==0)continue;
+    const cell=W/wm;if(H%cell!==0)continue;
+    const hm=H/cell;if(hm<1||hm>200)continue;
+    const res=[0,1,2].map(k=>rowDecode(read(wm,hm,k,false),wm,hm));
+    if(res.filter(x=>x!==null).length>=2)return {kind:'b3',mode:'row',res};
+    for(const inv of [false,true]){
+      const t=rowDecode(read(wm,hm,-1,inv),wm,hm);
+      if(t!==null)return {kind:'b1',mode:'row',res:[t,null,null]};}}
   return null;}
 
-/* ---------- сканування ---------- */
+/* ── РИТУАЛ СКАНУВАННЯ ── */
+function drawScanned(dataURL){
+  return new Promise(res=>{const im=new Image();
+    im.onload=()=>{OFF.width=OFF.height=512;OCTX.imageSmoothingEnabled=false;
+      OCTX.drawImage(im,0,0,512,512);blit();res()};
+    im.onerror=()=>res();im.src=dataURL;});}
+
+async function ritual(dataURL,onDecoded){
+  busy=true;
+  const st=$('stage');
+  st.classList.remove('revealed','locked');
+  if(dataURL)await drawScanned(dataURL);
+  st.classList.add('scanning');
+  startHum(1.5);
+  await sleep(1500);
+  stopHum();
+  st.classList.remove('scanning');
+  flash();
+  st.classList.add('revealed');
+  await sleep(120);
+  await onDecoded();
+  busy=false;}
+
 function stopScan(){
   scanning=false;
   if(rafId){cancelAnimationFrame(rafId);rafId=null}
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
   $('vid').srcObject=null;$('vid').classList.add('hide');
-  $('laser').classList.add('hide');$('cv').classList.remove('hide');}
+  $('cv').classList.remove('hide');
+  $('stage').classList.remove('scanning');
+  stopHum();}
 
-function showOverlay(text,aLabel,aFn,bLabel,bFn){
+function showOverlay(text,aL,aF,bL,bF){
   $('ovl-text').textContent=text;
   const A=$('ovl-a'),B=$('ovl-b');
-  A.textContent=aLabel;A.onclick=aFn;
-  if(bLabel){B.textContent=bLabel;B.onclick=bFn;B.classList.remove('hide')}else B.classList.add('hide');
+  A.textContent=aL;A.onclick=aF;
+  if(bL){B.textContent=bL;B.onclick=bF;B.classList.remove('hide')}else B.classList.add('hide');
   $('ovl').classList.remove('hide');}
 function hideOverlay(){$('ovl').classList.add('hide')}
 
 function enterScan(){
   stopScan();hideOverlay();
-  showOverlay('Обери джерело зображення','🖼 Галерея',()=>{hideOverlay();$('file').click()},
+  showOverlay('Обери джерело зображення',
+    '🖼 Галерея',()=>{hideOverlay();$('file').click()},
     '📷 Камера',()=>{hideOverlay();startCamera()});}
 
 function startCamera(){
   const v=$('vid');
   navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}}})
-    .then(s=>{
-      stream=s;v.srcObject=s;v.classList.remove('hide');$('cv').classList.add('hide');
-      $('laser').classList.remove('hide');
-      v.play().then(()=>{scanning=true;const st={fail:0,active:false,t:0,i:0};camLoop(st)});
-    }).catch(()=>{showOverlay('Камера недоступна','🖼 Обрати файл',()=>{hideOverlay();$('file').click()})});}
+    .then(s=>{stream=s;v.srcObject=s;v.classList.remove('hide');$('cv').classList.add('hide');
+      $('stage').classList.add('scanning');
+      v.play().then(()=>{scanning=true;camLoop({fail:0,active:false,t:0,i:0})});})
+    .catch(()=>showOverlay('Камера недоступна','🖼 Обрати файл',()=>{hideOverlay();$('file').click()}));}
 
 function camLoop(st){
   if(!scanning)return;
@@ -708,337 +825,326 @@ function camLoop(st){
     tx.drawImage(v,(vw-side)/2,(vh-side)/2,side,side,0,0,512,512);
     const img=tx.getImageData(0,0,512,512);
     const data=tryQR(img,st);
-    if(data){beep(880,.12);flash();stopScan();handleScanned(data,tc.toDataURL('image/png'));return;}}
+    if(data){const url=tc.toDataURL('image/png');stopScan();
+      ritual(url,()=>revealQR(data));return;}}
   rafId=requestAnimationFrame(()=>camLoop(st));}
 
 $('file').onchange=e=>{
   const f=e.target.files[0];if(!f)return;
   const url=URL.createObjectURL(f),im=new Image();
-  im.onload=()=>{
+  im.onload=async()=>{
     URL.revokeObjectURL(url);
-    /* 1) спроба байткоду — потрібен точний розмір */
-    const tc0=document.createElement('canvas');
-    tc0.width=im.naturalWidth;tc0.height=im.naturalHeight;
-    const tx0=tc0.getContext('2d',{willReadFrequently:true});
-    tx0.imageSmoothingEnabled=false;tx0.drawImage(im,0,0);
-    const px=tx0.getImageData(0,0,tc0.width,tc0.height).data;
-    const bres=tryByteFromImage(px,tc0.width,tc0.height);
-    if(bres){beep(880,.12);flash();applyByteResult(bres);e.target.value='';return;}
-    /* 2) спроба QR (печатка / spectrum) */
-    const tc=document.createElement('canvas');tc.width=tc.height=512;
-    const tx=tc.getContext('2d',{willReadFrequently:true});
-    const mn=Math.min(im.width,im.height);
-    tx.drawImage(im,(im.width-mn)/2,(im.height-mn)/2,mn,mn,0,0,512,512);
-    const img=tx.getImageData(0,0,512,512);
+    const t0=document.createElement('canvas');t0.width=im.naturalWidth;t0.height=im.naturalHeight;
+    const x0=t0.getContext('2d',{willReadFrequently:true});
+    x0.imageSmoothingEnabled=false;x0.drawImage(im,0,0);
+    const px=x0.getImageData(0,0,t0.width,t0.height).data;
+    const bres=tryByteFromImage(px,t0.width,t0.height);
+    const shot=document.createElement('canvas');shot.width=shot.height=512;
+    const sx=shot.getContext('2d');const mn=Math.min(im.width,im.height);
+    sx.imageSmoothingEnabled=false;
+    sx.drawImage(im,(im.width-mn)/2,(im.height-mn)/2,mn,mn,0,0,512,512);
+    const shotURL=shot.toDataURL('image/png');
+    if(bres){await ritual(shotURL,()=>revealByte(bres));e.target.value='';return;}
+    const img=sx.getImageData(0,0,512,512);
     const st={fail:100,active:true,t:0,i:0};
-    let tries=0;
-    (function loop(){
-      tries++;
-      const data=tryQR(img,st);
-      if(data){beep(880,.12);flash();handleScanned(data,tc.toDataURL('image/png'));return;}
-      if(tries<260)requestAnimationFrame(loop);
-      else{failSound();$('rt').innerHTML='<span class="r">не вдалося розпізнати</span>';}
-    })();
-    e.target.value='';
-  };
+    let tries=0,found=null;
+    while(tries<300&&!found){found=tryQR(img,st);tries++}
+    if(found){await ritual(shotURL,()=>revealQR(found));}
+    else{failSound();$('rt').innerHTML='<span class="r">не вдалося розпізнати</span>';}
+    e.target.value='';};
   im.onerror=()=>{URL.revokeObjectURL(url);$('rt').innerHTML='<span class="r">не вдалося відкрити файл</span>'};
   im.src=url;};
 
-function applyByteResult(r){
-  setGen('byte');
-  bMode=r.m;syncSeg('sym','m',bMode);
-  if(r.kind==='byte3'){setLayers(3);
-    $('t-r').value=r.res[0]||'';$('t-g').value=r.res[1]||'';$('t-b').value=r.res[2]||'';}
-  else{setLayers(1);$('t-single').value=r.res[0]||'';}
-  buildByte();
-  $('rt').innerHTML='<span class="g">✓ розшифровано байткод ('+(r.kind==='byte3'?'3 шари':'1 шар')+')</span>';}
+async function revealByte(r){
+  setGen('byte',true);
+  bMode=r.mode;syncSeg('sym','m',bMode);
+  if(r.kind==='b3'){setLayers(3);D.byte.ch=[r.res[0]||'',r.res[1]||'',r.res[2]||''];curCh=0}
+  else{setLayers(1);D.byte.single=r.res[0]||''}
+  refreshInputs();
+  okChime();
+  const txt=(r.kind==='b3'?D.byte.ch[0]:D.byte.single);
+  await typeOut($('tmain'),txt);
+  $('rt').innerHTML='<span class="g">✓ розшифровано · байткод</span>';
+  hasImage=true;syncMain();}
 
-async function handleScanned(raw,dataURL){
-  hideOverlay();
-  /* показуємо відскановане зображення */
-  if(dataURL){const im=new Image();im.onload=()=>{OFF.width=OFF.height=512;
-    OCTX.drawImage(im,0,0,512,512);blit();};im.src=dataURL;}
-  const isSeal=raw.startsWith('|'), isSci=raw.startsWith('SCI1:');
+async function revealQR(raw){
+  const isSeal=raw.startsWith('|'),isSci=raw.startsWith('SCI1:');
   if(isSeal||isSci){
-    const ct=isSeal?raw.slice(1):raw.slice(5);
-    setGen('seal');
-    $('t-seal').value='';
-    pendingCipher=ct;
-    showOverlay('Дані зашифровано. Введи ключ у полі вище.',
-      '🔓 Розшифрувати',async()=>{await tryDecryptPending();},
-      '✕ Закрити',()=>{hideOverlay()});
-    $('p-seal-pass').value='';$('p-seal-pass').focus();
-    $('rt').innerHTML='<span class="r">🔒 потрібен ключ</span>';
+    pendingCipher=isSeal?raw.slice(1):raw.slice(5);
+    setGen('seal',true);
+    D.seal.text='';D.seal.pass='';refreshInputs();
+    $('stage').classList.add('locked');
+    enterKeyMode(true);
+    tone(300,.5,.06,'sawtooth');
+    $('rt').innerHTML='<span class="r">🔒 введи ключ і натисни Enter</span>';
   }else{
-    setGen('seal');
-    $('t-seal').value=raw;sealPass='';$('p-seal-pass').value='';
-    pendingCipher=null;
-    okSound();
+    setGen('seal',true);
+    D.seal.text='';D.seal.pass='';pendingCipher=null;refreshInputs();
+    okChime();
+    await typeOut($('tmain'),raw);
+    D.seal.text=raw;
     $('rt').innerHTML='<span class="g">✓ прочитано</span>';
     hasImage=true;syncMain();}}
 
-let pendingCipher=null;
 async function tryDecryptPending(){
-  if(!pendingCipher)return false;
-  const p=$('p-seal-pass').value.trim();if(!p)return false;
+  if(!pendingCipher)return;
+  const p=$('tmain').value.trim();if(!p)return;
   const r=await decryptText(pendingCipher,p);
-  if(r===null){failSound();$('rt').innerHTML='<span class="r">невірний ключ</span>';return true}
-  okSound();pendingCipher=null;
-  $('t-seal').value=r;sealPass='';
+  if(r===null){failSound();$('rt').innerHTML='<span class="r">невірний ключ</span>';
+    $('tmain').value='';return;}
+  pendingCipher=null;keyMode=false;
+  $('stage').classList.remove('locked');
+  $('tmain').classList.remove('masked');
+  $('tmain').placeholder='Текст таємниці…';
+  syncKeyButtons();
+  okChime();
+  await typeOut($('tmain'),r,42);
+  D.seal.text=r;D.seal.pass='';
   $('rt').innerHTML='<span class="g">✓ розшифровано</span>';
-  hideOverlay();
-  return true;}
+  hasImage=true;syncMain();}
 
-/* =====================================================================
-   ГОЛОВНА КНОПКА (зберегти / завантажити) + меню
-   ===================================================================== */
+/* ═══════════ ГОЛОВНА КНОПКА ═══════════ */
 const IC_SAVE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>';
 const IC_LOAD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg>';
 function syncMain(){
-  const btn=$('mainbtn');
-  if(hasImage){btn.innerHTML=IC_SAVE+'<span>Зберегти</span>'}
-  else{btn.innerHTML=IC_LOAD+'<span>Завантажити · сканувати</span>'}
+  const b=$('mainbtn');
+  b.innerHTML=hasImage?IC_SAVE+'<span>Зберегти</span>':IC_LOAD+'<span>Завантажити · сканувати</span>';
   if(menuOpen)closeMenu();}
 function closeMenu(){menuOpen=false;$('menu').classList.add('hide');$('menu').innerHTML=''}
 function openMenu(){
   const m=$('menu');m.innerHTML='';menuOpen=true;m.classList.remove('hide');
   if(hasImage){
-    const suggested=defaultName();
-    m.innerHTML=`
-      <div class="menu-t">Ім'я файлу</div>
-      <input class="inp" id="fname" value="${suggested}" autocomplete="off" spellcheck="false">
-      <div class="menu-t">Формат</div>
-      <div class="row">
-        <button class="b gold" data-fmt="png">PNG</button>
-        <button class="b" data-fmt="svg">SVG</button>
-      </div>
-      <div class="row"><button class="b" data-fmt="read">${GEN==='byte'&&bLayers===1?'PNG ч/б для читання':'PNG для читання'}</button></div>`;
-    m.querySelectorAll('[data-fmt]').forEach(b=>b.onclick=()=>{
-      const name=($('fname').value||suggested).trim().replace(/[\\/:*?"<>|]/g,'_');
-      doSave(b.dataset.fmt,name);closeMenu();});
-    if(GEN!=='byte')m.querySelector('[data-fmt="svg"]').disabled=true;
+    const sug=defaultName();
+    m.innerHTML=`<div class="menu-t">Ім'я файлу</div>
+      <input id="fname" value="${sug}" autocomplete="off" spellcheck="false">
+      <div class="row"><button class="b gold" id="do-save">⤓ Зберегти PNG</button></div>`;
+    $('do-save').onclick=()=>{
+      const n=($('fname').value||sug).trim().replace(/[\\/:*?"<>|]/g,'_')||'taina';
+      savePNG(n);closeMenu();};
+    setTimeout(()=>{const f=$('fname');f.focus();f.select()},40);
   }else{
-    m.innerHTML=`
-      <div class="menu-t">Джерело</div>
-      <div class="row">
-        <button class="b gold" data-src="gal">🖼 Галерея</button>
-        <button class="b" data-src="cam">📷 Камера</button>
-      </div>`;
-    m.querySelector('[data-src="gal"]').onclick=()=>{closeMenu();$('file').click()};
-    m.querySelector('[data-src="cam"]').onclick=()=>{closeMenu();startCamera()};}}
-$('mainbtn').onclick=e=>{e.stopPropagation();menuOpen?closeMenu():openMenu()};
+    m.innerHTML=`<div class="menu-t">Джерело</div>
+      <div class="row"><button class="b gold" id="src-gal">🖼 Галерея</button>
+      <button class="b" id="src-cam">📷 Камера</button></div>`;
+    $('src-gal').onclick=()=>{closeMenu();$('file').click()};
+    $('src-cam').onclick=()=>{closeMenu();startCamera()};}}
+$('mainbtn').onclick=e=>{e.stopPropagation();if(busy)return;menuOpen?closeMenu():openMenu()};
 document.addEventListener('click',e=>{if(menuOpen&&!e.target.closest('.action'))closeMenu()});
 
 function defaultName(){
   let base='taina';
   if(GEN==='byte'){const t=byteTexts().find(x=>x);if(t)base=t}
-  else if(GEN==='seal'){const t=$('t-seal').value.trim();if(t)base=t}
-  else{const t=CH.map(k=>$('s-'+k).value).find(x=>x&&x.trim());if(t)base=t}
-  return base.slice(0,20).trim().replace(/\s+/g,'_')||'taina';}
-
-function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);beep(660,.09);}
-
-function doSave(fmt,name){
-  if(fmt==='svg'&&GEN==='byte'){saveByteSVG(name);return}
-  if(fmt==='read'){
-    if(GEN==='byte'){saveByteReadable(name);return}
-    // печатка/spectrum: чистий PNG без змін — саме він і читається
-  }
+  else if(GEN==='seal'){if(D.seal.text.trim())base=D.seal.text}
+  else{const t=D.spec.ch.find(x=>x&&x.trim());if(t)base=t}
+  return base.slice(0,24).trim().replace(/\s+/g,'_')||'taina';}
+function savePNG(name){
+  const scale=Math.max(1,Math.round(1200/Math.max(OFF.width,1)));
   const ex=document.createElement('canvas');
-  const scale=Math.max(1,Math.round(1024/Math.max(OFF.width,1)));
   ex.width=OFF.width*scale;ex.height=OFF.height*scale;
   const c=ex.getContext('2d');c.imageSmoothingEnabled=false;
   c.drawImage(OFF,0,0,OFF.width,OFF.height,0,0,ex.width,ex.height);
-  ex.toBlob(b=>dl(b,name+'.png'));}
+  ex.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);
+    a.download=name+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    tone(660,.09,.07);});}
 
-function saveByteReadable(name){
-  const cell=Math.max(1,Math.floor(1024/bN));
-  const ex=document.createElement('canvas');ex.width=ex.height=bN*cell;
-  const c=ex.getContext('2d');c.imageSmoothingEnabled=false;
-  c.fillStyle='#000';c.fillRect(0,0,ex.width,ex.height);
-  if(bLayers===3){
-    for(let y=0;y<bN;y++)for(let x=0;x<bN;x++){const i=y*bN+x;
-      const R=bGrid.r[i]?255:0,G=bGrid.g[i]?255:0,B=bGrid.b[i]?255:0;
-      if(!R&&!G&&!B)continue;c.fillStyle=`rgb(${R},${G},${B})`;c.fillRect(x*cell,y*cell,cell,cell);}
-  }else{c.fillStyle='#fff';
-    for(let y=0;y<bN;y++)for(let x=0;x<bN;x++)if(bGrid.r[y*bN+x])c.fillRect(x*cell,y*cell,cell,cell);}
-  ex.toBlob(b=>dl(b,name+(bLayers===3?'-rgb':'-bw')+'.png'));}
+/* ═══════════ ЄДИНЕ ПОЛЕ ВВОДУ ═══════════ */
+const IC_KEY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="15" r="4"/><path d="M10.5 11.5 20 2m0 0h-5m5 0v5m-9 4.5L15 9"/></svg>';
+const IC_LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>';
 
-function saveByteSVG(name){
-  const c=Rof(bN),pad=frame?2:0,S=bN+pad*2,u=10;
-  const shp=(px,py,col)=>shape==='circle'
-    ?`<circle cx="${px+u/2}" cy="${py+u/2}" r="${u*.46}" fill="${col}"/>`
-    :`<rect x="${px}" y="${py}" width="${u}" height="${u}" fill="${col}"/>`;
-  let r=`<svg xmlns="http://www.w3.org/2000/svg" width="${S*u}" height="${S*u}" viewBox="0 0 ${S*u} ${S*u}" shape-rendering="crispEdges">`;
-  if(bLayers===3){
-    r+=`<rect width="100%" height="100%" fill="${frame?'#b8b2a6':'#000'}"/>`;
-    if(frame)r+=`<rect x="${pad*u}" y="${pad*u}" width="${bN*u}" height="${bN*u}" fill="#000"/>`;
-    for(let y=0;y<bN;y++)for(let x=0;x<bN;x++){const i=y*bN+x;
-      const R=bGrid.r[i]?255:0,G=bGrid.g[i]?255:0,B=bGrid.b[i]?255:0;
-      if(!R&&!G&&!B)continue;r+=shp((x+pad)*u,(y+pad)*u,`rgb(${R},${G},${B})`);}
-  }else{
-    const {bg,ink,fg}=byteColors();
-    r+=`<rect width="100%" height="100%" fill="${frame?'#b8b2a6':bg}"/>`;
-    if(frame)r+=`<rect x="${pad*u}" y="${pad*u}" width="${bN*u}" height="${bN*u}" fill="${bg}"/>`;
-    const R2=(bBodyR+.5)*(bBodyR+.5);
-    for(let y=0;y<bN;y++)for(let x=0;x<bN;x++){
-      const on=bGrid.r[y*bN+x];let col;
-      if(on)col=fg.length>1?fg[Math.round(Math.hypot(x-c,y-c))%fg.length]:fg[0];
-      else{const inB=((x-c)*(x-c)+(y-c)*(y-c))<=R2;if(!inB)continue;if(!neg&&pal==='mono')continue;col=ink;}
-      r+=shp((x+pad)*u,(y+pad)*u,col);}}
-  r+='</svg>';
-  dl(new Blob([r],{type:'image/svg+xml'}),name+'.svg');}
+function usesChannels(){return (GEN==='byte'&&bLayers===3)||GEN==='spec'}
+function usesKey(){return GEN==='seal'||GEN==='spec'}
 
-/* =====================================================================
-   ПЕРЕМИКАННЯ ГЕНЕРАТОРІВ
-   ===================================================================== */
-const PRINCIPLE={
-  byte1:'Текст стає потоком байтів <b>UTF-8</b>. Біти порядково заповнюють октант і дзеркаляться навколо центру. Кінець позначено байтом <b>0xFF</b> — узор <b>читається назад</b>.',
-  byte3:'Три тексти лягають у <b>три канали RGB</b>, кожен — свій октант-байткод. Кольори змішуються: R+G = жовтий, усі три = білий. Декодер читає кожен канал <b>окремо</b>.',
-  seal:'Текст перетворюється на QR і ховається у <b>синьому каналі</b>, а червоний і зелений заповнює декоративна мандала. Око бачить орнамент — сканер бачить код. З ключем текст шифрується <b>AES-GCM</b>.',
-  spec:'Три незалежні QR-коди накладаються у <b>три канали RGB</b> — утричі більше даних, ніж у звичайному QR. Кожен канал можна замкнути <b>власним паролем</b>.'};
-const TIP={
-  byte:'Кнопка внизу міняється сама: є узор — «Зберегти», порожньо — «Завантажити». Формати ховаються всередині.',
-  seal:'«Новий візерунок» ліворуч дає інший декоративний узор для того самого тексту.',
-  spec:'Натисни ключ ліворуч від каналу, введи пароль — канал замкнеться окремо від інших.'};
+function getSlot(){
+  if(GEN==='byte')return bLayers===1?D.byte.single:D.byte.ch[curCh];
+  if(GEN==='seal')return D.seal.text;
+  return D.spec.ch[curCh];}
+function setSlot(v){
+  if(GEN==='byte'){if(bLayers===1)D.byte.single=v;else D.byte.ch[curCh]=v;}
+  else if(GEN==='seal')D.seal.text=v;
+  else D.spec.ch[curCh]=v;}
+
+function buildChTabs(){
+  const box=$('chtabs');box.innerHTML='';
+  if(!usesChannels()){box.style.visibility='hidden';return}
+  box.style.visibility='visible';
+  CH.forEach((k,i)=>{
+    const arr=GEN==='byte'?D.byte.ch:D.spec.ch;
+    const filled=(arr[i]||'').trim().length>0 || (GEN==='spec'&&D.spec.pass[i]);
+    const b=document.createElement('button');
+    b.className='chtab'+(i===curCh?' on':'')+(filled?' filled':'');
+    b.innerHTML=`<span class="dot" style="background:var(--ch-${k});color:var(--ch-${k})"></span>${CHNAME[k]}`;
+    b.onclick=()=>{if(keyMode)exitKeyMode();curCh=i;refreshInputs()};
+    box.appendChild(b);});}
+
+function syncKeyButtons(){
+  const kb=$('keybtn'),lb=$('lockbtn');
+  if(!usesKey()){kb.classList.add('invis');lb.classList.add('invis');return}
+  kb.classList.remove('invis');
+  kb.innerHTML=IC_KEY;
+  const locked = GEN==='seal' ? !!D.seal.pass : !!D.spec.pass[curCh];
+  kb.classList.toggle('locked',locked&&!keyMode);
+  kb.classList.toggle('active',keyMode);
+  if(locked&&!keyMode)kb.innerHTML=IC_LOCK;
+  const hasText = GEN==='seal' ? D.seal.text.trim().length>0
+                  : (D.spec.plain[curCh]||D.spec.ch[curCh]||'').trim().length>0;
+  kb.disabled = !hasText && !locked && !keyMode && !pendingCipher;
+  if(keyMode){lb.classList.remove('invis');lb.innerHTML=IC_LOCK;}
+  else lb.classList.add('invis');}
+
+function enterKeyMode(forDecrypt){
+  keyMode=true;
+  const el=$('tmain');
+  el.value='';el.maxLength=12;el.classList.add('masked');
+  el.placeholder=forDecrypt?'ключ до таємниці…':'ключ / пароль…';
+  el.classList.remove('ch-r','ch-g','ch-b');
+  syncKeyButtons();setTimeout(()=>el.focus(),40);}
+function exitKeyMode(){
+  keyMode=false;
+  const el=$('tmain');
+  el.maxLength=300;el.classList.remove('masked');
+  refreshInputs();}
+
+function commitKey(){
+  const p=$('tmain').value.trim();
+  keyMode=false;
+  if(GEN==='seal'){D.seal.pass=p;if(p)lockSound();buildSeal();}
+  else{
+    if(p){D.spec.pass[curCh]=p;
+      if(!D.spec.plain[curCh])D.spec.plain[curCh]=D.spec.ch[curCh];
+      lockSound();}
+    else{D.spec.pass[curCh]='';D.spec.plain[curCh]='';}
+    buildSpec();}
+  $('tmain').maxLength=300;$('tmain').classList.remove('masked');
+  refreshInputs();}
+
+function refreshInputs(){
+  const el=$('tmain');
+  buildChTabs();syncKeyButtons();
+  if(keyMode)return;
+  el.value=getSlot();
+  el.classList.remove('ch-r','ch-g','ch-b');
+  if(usesChannels())el.classList.add('ch-'+CH[curCh]);
+  el.placeholder = GEN==='byte'?'Напиши щось…'
+    : GEN==='seal'?'Текст таємниці…'
+    : CHNAME[CH[curCh]]+' канал…';}
+
+/* ═══════════ КІМНАТИ ═══════════ */
+const ROOM={
+  byte:{name:'Байткод',cls:'room-byte',
+    p1:'Текст стає потоком байтів <b>UTF-8</b>. Біти порядково заповнюють октант і дзеркаляться навколо центру — узор і є самі дані. Кінець позначено байтом <b>0xFF</b>, тож картинка <b>читається назад</b> без підказок.',
+    p3:'Три тексти лягають у <b>три канали RGB</b> — кожен свій октант. Кольори народжуються з накладання: R+G = жовтий, усі три = білий. Декодер читає кожен канал <b>окремо</b>.',
+    prow:'Режим <b>×1</b>: кожен символ — окремий рядок бітів. Скільки символів, стільки рядків. Без дзеркал — чиста структура тексту, як перфокарта.',
+    tip:'Кнопка внизу міняється сама: є узор — «Зберегти», порожньо — «Завантажити». Ім\'я файлу задаєш сам.'},
+  seal:{name:'Печатка',cls:'room-seal',
+    p1:'Текст перетворюється на QR і ховається у <b>синьому каналі</b>, а червоний із зеленим заповнює декоративна мандала. Око бачить орнамент — сканер бачить код. З ключем текст шифрується <b>AES-GCM</b>, і без пароля печатка не відкриється.',
+    tip:'Натисни ключ ліворуч — поле стане полем пароля. Enter замикає. Кнопка ↻ у куті полотна дає новий візерунок.'},
+  spec:{name:'Spectrum',cls:'room-spec',
+    p1:'Три незалежні QR-коди накладаються у <b>три канали RGB</b> — утричі більше даних, ніж у звичайному QR. Кожен канал замикається <b>власним паролем</b>: червоний одному, зелений іншому.',
+    tip:'Обери канал угорі, введи текст. Ключ ліворуч замикає саме цей канал — решта лишаються відкритими.'}};
 
 function syncSeg(id,attr,val){for(const b of $(id).children)b.classList.toggle('on',b.dataset[attr]===val)}
 function setLayers(n){
   bLayers=n;syncSeg('layers','l',String(n));
-  $('in-single').classList.toggle('hide',n===3);
-  $('in-triple').classList.toggle('hide',n===1);
+  if(n===1)curCh=0;
   $('pal').disabled=(n===3);$('posneg').disabled=(n===3);
-  $('principle').innerHTML=n===3?PRINCIPLE.byte3:PRINCIPLE.byte1;}
+  updatePrinciple();}
+function updatePrinciple(){
+  if(GEN==='byte'){
+    $('principle').innerHTML = bMode==='row'?ROOM.byte.prow:(bLayers===3?ROOM.byte.p3:ROOM.byte.p1);
+  }else $('principle').innerHTML=ROOM[GEN].p1;}
 
-function setGen(g){
+function setGen(g,silent){
+  if(GEN===g&&silent)return;
   GEN=g;
+  document.body.className=ROOM[g].cls;
   for(const b of $('tabs').children)b.classList.toggle('on',b.dataset.gen===g);
   ['p-byte','p-seal','p-spec'].forEach(id=>$(id).classList.add('hide'));
-  ['in-single','in-triple','in-seal','in-spec'].forEach(id=>$(id).classList.add('hide'));
+  $('p-'+g).classList.remove('hide');
   $('look-grp').classList.toggle('hide',g!=='byte');
   $('s-cap-row').classList.toggle('hide',g!=='byte');
-  stopScan();hideOverlay();pendingCipher=null;
-  if(g==='byte'){
-    $('p-byte').classList.remove('hide');
-    $(bLayers===3?'in-triple':'in-single').classList.remove('hide');
-    $('principle').innerHTML=bLayers===3?PRINCIPLE.byte3:PRINCIPLE.byte1;
-    $('tip').textContent=TIP.byte;
-    buildByte();
-  }else if(g==='seal'){
-    $('p-seal').classList.remove('hide');$('in-seal').classList.remove('hide');
-    $('principle').innerHTML=PRINCIPLE.seal;$('tip').textContent=TIP.seal;
-    buildSeal();
-  }else{
-    $('p-spec').classList.remove('hide');$('in-spec').classList.remove('hide');
-    $('principle').innerHTML=PRINCIPLE.spec;$('tip').textContent=TIP.spec;
-    buildSpec();}}
+  $('refresh-fab').classList.toggle('hide',g!=='seal');
+  $('roomname').textContent=ROOM[g].name;
+  $('tip').textContent=ROOM[g].tip;
+  updatePrinciple();
+  keyMode=false;curCh=0;
+  if(!silent){stopScan();hideOverlay();pendingCipher=null;
+    $('stage').classList.remove('locked','revealed');}
+  refreshInputs();
+  if(g==='byte')buildByte();else if(g==='seal')buildSeal();else buildSpec();
+  if(!silent)tone(520,.07,.05);}
 
-/* =====================================================================
-   ПОДІЇ
-   ===================================================================== */
-$('tabs').onclick=e=>{const b=e.target.closest('button');if(b)setGen(b.dataset.gen)};
+/* ═══════════ ПОДІЇ ═══════════ */
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(b&&!busy)setGen(b.dataset.gen)};
 $('home-btn').onclick=()=>{
-  stopScan();hideOverlay();pendingCipher=null;
-  $('t-single').value='ТАЇНА';$('t-r').value='ТАЇНА';$('t-g').value='';$('t-b').value='';
-  $('t-seal').value='';$('p-seal-pass').value='';sealPass='';
-  CH.forEach(k=>{$('s-'+k).value='';specPass[k]='';specPlain[k]='';
-    const kb=$('k-'+k);kb.classList.remove('active','locked');kb.disabled=true;
-    $('s-'+k).classList.remove('masked');$('s-'+k).readOnly=false;});
-  setLayers(1);setGen('byte');};
-$('scan-chip').onclick=()=>{clearStage();enterScan()};
+  if(busy)return;
+  stopScan();hideOverlay();pendingCipher=null;keyMode=false;
+  D.byte={single:'ТАЇНА',ch:['ТАЇНА','','']};
+  D.seal={text:'',pass:''};
+  D.spec={ch:['','',''],pass:['','',''],plain:['','','']};
+  curCh=0;setLayers(1);bMode='oct';syncSeg('sym','m','oct');
+  setGen('byte');};
+$('scan-chip').onclick=()=>{if(!busy){clearStage();enterScan()}};
 
-/* байткод */
-$('layers').onclick=e=>{const b=e.target.closest('button');if(!b)return;setLayers(+b.dataset.l);buildByte()};
-$('sym').onclick=e=>{const b=e.target.closest('button');if(!b)return;bMode=b.dataset.m;syncSeg('sym','m',bMode);buildByte()};
-$('shape').onclick=e=>{const b=e.target.closest('button');if(!b)return;shape=b.dataset.s;syncSeg('shape','s',shape);if(GEN==='byte')renderByte()};
+$('layers').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  setLayers(+b.dataset.l);refreshInputs();buildByte()};
+$('sym').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  bMode=b.dataset.m;syncSeg('sym','m',bMode);updatePrinciple();buildByte()};
+$('shape').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  shape=b.dataset.s;syncSeg('shape','s',shape);if(GEN==='byte')renderByte()};
 $('pal').onchange=e=>{pal=e.target.value;if(GEN==='byte')renderByte()};
-$('posneg').onclick=()=>{if(bLayers===3)return;neg=!neg;$('posneg').classList.toggle('on',neg);if(GEN==='byte')renderByte()};
-$('framebtn').onclick=()=>{frame=!frame;$('framebtn').classList.toggle('on',frame);if(GEN==='byte')renderByte()};
-$('t-single').oninput=buildByte;
-['t-r','t-g','t-b'].forEach(id=>$(id).oninput=buildByte);
-$('split-btn').onclick=()=>{
-  const src=[...$('t-r').value];if(!src.length)return;
-  const k=Math.ceil(src.length/3);
-  $('t-r').value=src.slice(0,k).join('');
-  $('t-g').value=src.slice(k,2*k).join('');
-  $('t-b').value=src.slice(2*k).join('');
-  buildByte();};
+$('posneg').onclick=()=>{if(bLayers===3)return;neg=!neg;
+  $('posneg').classList.toggle('on',neg);if(GEN==='byte')renderByte()};
+$('framebtn').onclick=()=>{frame=!frame;$('framebtn').classList.toggle('on',frame);
+  if(GEN==='byte')renderByte()};
+$('refresh-fab').onclick=()=>{if(GEN==='seal'){buildSeal();tone(550,.08,.06)}};
 
-/* печатка */
-let sealTimer=null;
-function schedSeal(){clearTimeout(sealTimer);sealTimer=setTimeout(buildSeal,280)}
-$('t-seal').oninput=()=>{pendingCipher=null;schedSeal()};
-$('p-seal-pass').oninput=async e=>{
-  beep(2200,.02);
-  syncSealKey();
-  if(pendingCipher){return}
-  sealPass=e.target.value;schedSeal();};
-$('p-seal-pass').onkeydown=async e=>{
-  if(e.key==='Enter'){e.preventDefault();
-    if(pendingCipher){await tryDecryptPending();buildSeal();}}};
-$('seal-refresh').onclick=()=>{if(GEN==='seal'){buildSeal();beep(550,.08)}};
+let prevLen=0, sealTimer=null;
+$('tmain').oninput=e=>{
+  const v=e.target.value;
+  if(v.length>prevLen)keyClick();
+  prevLen=v.length;
+  if(keyMode)return;
+  setSlot(v);
+  buildChTabs();syncKeyButtons();
+  if(GEN==='byte')buildByte();
+  else if(GEN==='seal'){clearTimeout(sealTimer);sealTimer=setTimeout(buildSeal,300)}
+  else buildSpec();};
+$('tmain').onkeydown=async e=>{
+  if(e.key!=='Enter')return;
+  e.preventDefault();
+  if(pendingCipher){await tryDecryptPending();return}
+  if(keyMode)commitKey();};
+$('keybtn').onclick=()=>{
+  if(keyMode){exitKeyMode();return}
+  const locked = GEN==='seal'?!!D.seal.pass:!!D.spec.pass[curCh];
+  if(locked){
+    if(GEN==='seal'){D.seal.pass='';buildSeal()}
+    else{D.spec.pass[curCh]='';
+      if(D.spec.plain[curCh]){D.spec.ch[curCh]=D.spec.plain[curCh];D.spec.plain[curCh]=''}
+      buildSpec()}
+    refreshInputs();return;}
+  if(GEN==='spec')D.spec.plain[curCh]=D.spec.ch[curCh];
+  enterKeyMode(false);};
+$('lockbtn').onclick=()=>{if(keyMode)commitKey()};
 
-/* spectrum: ключі по каналах */
-const IC_KEY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="15" r="4"/><path d="M10.5 11.5 20 2m0 0h-5m5 0v5m-9 4.5L15 9"/></svg>';
-const IC_LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>';
-CH.forEach(k=>{
-  const el=$('s-'+k), kb=$('k-'+k);
-  kb.innerHTML=IC_KEY;
-  el.oninput=()=>{
-    if(kb.classList.contains('active')){beep(2200,.02);return}
-    kb.disabled=!el.value.trim();buildSpec();};
-  el.onkeydown=e=>{if(e.key==='Enter'&&kb.classList.contains('active')){e.preventDefault();lockChan(k)}};
-  kb.onclick=()=>{
-    if(kb.classList.contains('active')||kb.classList.contains('locked'))unlockChan(k);
-    else{specPlain[k]=el.value;el.value='';el.maxLength=12;el.classList.add('masked');
-      el.placeholder='ключ…';kb.classList.add('active');kb.innerHTML=IC_KEY;setTimeout(()=>el.focus(),30);}};});
-function lockChan(k){
-  const el=$('s-'+k),kb=$('k-'+k);
-  const p=el.value.trim();
-  if(!p){unlockChan(k);return}
-  specPass[k]=p;el.value=specPlain[k];el.readOnly=true;el.removeAttribute('maxlength');
-  el.classList.add('masked');kb.classList.remove('active');kb.classList.add('locked');kb.innerHTML=IC_LOCK;
-  beep(1900,.03);setTimeout(()=>beep(700,.12),40);buildSpec();}
-function unlockChan(k){
-  const el=$('s-'+k),kb=$('k-'+k);
-  el.value=specPlain[k]||el.value;el.readOnly=false;el.removeAttribute('maxlength');
-  el.classList.remove('masked');el.placeholder=({r:'червоний',g:'зелений',b:'синій'}[k])+' канал…';
-  kb.classList.remove('active','locked');kb.innerHTML=IC_KEY;
-  specPlain[k]='';specPass[k]='';buildSpec();}
-
-/* печатка: ключ-кнопка — фокус на поле ключа + індикація */
-$('seal-key').innerHTML=IC_KEY;
-$('seal-key').disabled=false;
-$('seal-key').onclick=()=>$('p-seal-pass').focus();
-function syncSealKey(){
-  const kb=$('seal-key'), has=$('p-seal-pass').value.trim().length>0;
-  kb.classList.toggle('locked',has);
-  kb.innerHTML=has?IC_LOCK:IC_KEY;}
-
-/* емодзі */
 const EMO=['♥','★','☀','☾','✦','♦','☘','✿','⚡','☺','✚','∞'];
 EMO.forEach(s=>{const b=document.createElement('button');b.type='button';b.textContent=s;
-  b.onclick=()=>{
-    let el;
-    if(GEN==='byte')el=bLayers===1?$('t-single'):(document.activeElement&&document.activeElement.id.startsWith('t-')?document.activeElement:$('t-r'));
-    else if(GEN==='seal')el=$('t-seal');
-    else el=(document.activeElement&&document.activeElement.id.startsWith('s-'))?document.activeElement:$('s-r');
+  b.onclick=()=>{if(keyMode)return;
+    const el=$('tmain');
     el.value=[...el.value,s].join('').slice(0,el.maxLength||300);
     el.dispatchEvent(new Event('input'));};
   $('emoji').appendChild(b);});
 
-/* drag & drop */
 document.addEventListener('dragover',e=>e.preventDefault());
-document.addEventListener('drop',e=>{e.preventDefault();
+document.addEventListener('drop',e=>{e.preventDefault();if(busy)return;
   const f=e.dataTransfer.files[0];
   if(f&&f.type.startsWith('image/')){
     const dt=new DataTransfer();dt.items.add(f);$('file').files=dt.files;
     $('file').dispatchEvent(new Event('change'));}});
 
-/* ---------- старт ---------- */
+/* ── старт ── */
 setLayers(1);
-setGen('byte');
+setGen('byte',true);
 </script>
 </body>
 </html>
